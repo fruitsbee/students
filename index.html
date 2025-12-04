@@ -137,20 +137,114 @@
             <button class="action-btn" onclick="saveLog()">저장하기</button>
         </div>
 
-        <!-- [탭 3] AI -->
+        <!-- [탭 3] AI 보조 및 자동 생성 -->
         <div id="tab-ai" class="section">
             <div style="background:#e8f0fe; padding:15px; border-radius:12px; margin-bottom:15px;">
                 <h4 style="margin:0 0 5px 0; color:var(--primary);">🤖 Gemini 선생님</h4>
-                <p style="margin:0; font-size:0.85em; color:#555;">학생 기록을 분석하여 답변합니다.</p>
+                <p style="margin:0; font-size:0.85em; color:#555;">개별 질문 또는 생활기록부 일괄 작업을 수행합니다.</p>
             </div>
-            <input type="text" id="ai-name" placeholder="대상 학생 이름">
-            <textarea id="ai-query" placeholder="질문 (예: 이 학생의 행동 특성을 요약해줘)"></textarea>
-            <button class="action-btn" onclick="askAI()">AI에게 질문하기</button>
-            <div id="ai-result" class="ai-result"></div>
-        </div>
-    </div>
 
+            <!-- 1. 개별 질문 모드 -->
+            <div class="card" style="border:1px solid #ddd; box-shadow:none; padding:15px; margin-bottom:20px;">
+                <h5 style="margin:0 0 10px 0;"><i class="fas fa-comment-dots"></i> 개별 상담</h5>
+                <input type="text" id="ai-name" placeholder="학생 이름">
+                <textarea id="ai-query" placeholder="질문 (예: 이 학생의 특성 요약해줘)" style="min-height:80px;"></textarea>
+                <button class="action-btn" onclick="askAI()">질문하기</button>
+                <div id="ai-result" class="ai-result"></div>
+            </div>
+
+            <!-- 2. 일괄 생성 모드 (신규 기능) -->
+            <div class="card" style="border:2px solid var(--primary); box-shadow:none; padding:15px; background:#fff;">
+                <h5 style="margin:0 0 10px 0; color:var(--primary);"><i class="fas fa-magic"></i> 생기부 자료 일괄 생성</h5>
+                <p style="font-size:0.8em; color:#666; margin-bottom:10px;">
+                    'Guidelines' 시트의 지침을 반영하여<br>
+                    <strong>'Drafts' 시트에 결과를 저장</strong>합니다.
+                </p>
+
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <button class="action-btn" style="background:#2e7d32;" onclick="startBatch('행동특성')">
+                        <i class="fas fa-user-graduate"></i> 행특 생성
+                    </button>
+                    <button class="action-btn" style="background:#f57c00;" onclick="askSubjectAndStart()">
+                        <i class="fas fa-book-open"></i> 교과 생성
+                    </button>
+                </div>
+                
+                <!-- 진행 상태 표시줄 -->
+                <div id="batch-status" style="display:none; margin-top:10px; padding:10px; background:#f5f5f5; border-radius:8px; font-size:0.9em;">
+                    <div id="progress-text" style="font-weight:bold; margin-bottom:5px;">대기 중...</div>
+                    <div style="width:100%; background:#ddd; height:10px; border-radius:5px;">
+                        <div id="progress-bar" style="width:0%; height:100%; background:var(--primary); border-radius:5px; transition: width 0.3s;"></div>
+                    </div>
+                    <div id="current-log" style="font-size:0.8em; color:#666; margin-top:5px; height:20px; overflow:hidden;"></div>
+                </div>
+            </div>
+        </div>
+
+    <!-- (스크립트 부분에 아래 함수들 추가) -->
     <script>
+        // ... (기존 변수 및 함수들 유지) ...
+
+        // [신규] 교과목 이름 묻기
+        function askSubjectAndStart() {
+            const subject = prompt("어떤 과목의 세특을 생성할까요?\n(예: 국어, 수학, 사회)");
+            if (subject) {
+                startBatch('교과세특', subject);
+            }
+        }
+
+        // [신규] 일괄 작업 시작 (핵심 로직)
+        async function startBatch(type, subject = "") {
+            if (!confirm(`전체 학생의 [${type}${subject ? "-" + subject : ""}] 자료를 생성하시겠습니까?\n시간이 다소 소요됩니다.`)) return;
+
+            const statusBox = document.getElementById("batch-status");
+            const pText = document.getElementById("progress-text");
+            const pBar = document.getElementById("progress-bar");
+            const pLog = document.getElementById("current-log");
+
+            statusBox.style.display = "block";
+            pText.innerText = "학생 명단 불러오는 중...";
+            
+            // 1. 전체 학생 명단 가져오기
+            const names = await callAPI("getAllStudentNames", {});
+            
+            if (!names || names.length === 0) {
+                alert("학생 명단이 없습니다.");
+                statusBox.style.display = "none";
+                return;
+            }
+
+            // 2. 한 명씩 순서대로 처리 (for loop)
+            let successCount = 0;
+            for (let i = 0; i < names.length; i++) {
+                const name = names[i];
+                const percent = Math.round(((i + 1) / names.length) * 100);
+                
+                // UI 업데이트
+                pText.innerText = `진행 중: ${i + 1} / ${names.length} 명 (${percent}%)`;
+                pBar.style.width = `${percent}%`;
+                pLog.innerText = `▶ ${name} 학생 데이터 분석 및 생성 중...`;
+
+                try {
+                    // AI 생성 요청
+                    await callAPI("generateDraft", { 
+                        studentName: name, 
+                        type: type, 
+                        subject: subject 
+                    });
+                    successCount++;
+                } catch (e) {
+                    pLog.innerText = `⚠️ ${name} 생성 실패: ${e.message}`;
+                    console.error(e);
+                    // 실패해도 멈추지 않고 다음 학생으로 넘어감
+                }
+            }
+
+            pText.innerText = "완료!";
+            pLog.innerText = `총 ${successCount}명의 자료가 'Drafts' 시트에 저장되었습니다.`;
+            alert(`작업이 완료되었습니다.\n구글 시트의 'Drafts' 탭을 확인하세요.`);
+        }
+    </script>
         // ==========================================
         // [수정필요 2] GAS 배포 주소 입력
         // ==========================================
