@@ -174,7 +174,7 @@
             }
         }
 
-        // [기능 1] 학생 조회
+       // [기능 1] 학생 조회 (화면 표시 순서 변경)
         async function searchStudent() {
             const name = document.getElementById("search-input").value.trim();
             if(!name) return;
@@ -186,12 +186,21 @@
             const data = await callAPI("getStudentInfo", { studentName: name });
             
             if (data) {
+                // 원하시는 순서대로 HTML 구성
                 box.innerHTML = `
-                    <strong>${data.name}</strong> (${data.birth})<br>
-                    📞 ${data.phone}<br>
-                    🏠 ${data.address}<br>
-                    ⚠️ ${data.memo}<br>
-                    🏫 ${data.afterSchool}
+                    <div style="line-height: 1.8;">
+                        <strong style="font-size:1.2em; color:#4285f4;">${data.name}</strong> (${data.birth})<br>
+                        <hr style="border:0; border-top:1px solid #eee; margin:5px 0;">
+                        📞 <strong>(주)보호자:</strong> ${data.parentMain}<br>
+                        📞 <strong>(부)보호자:</strong> ${data.parentSub}<br>
+                        🏫 <strong>방과후:</strong> ${data.afterSchool}<br>
+                        🔰 <strong>두레:</strong> ${data.dure}<br>
+                        🏠 <strong>주소:</strong> ${data.address}<br>
+                        💻 <strong>아이톡톡:</strong> ${data.italk}<br>
+                        <hr style="border:0; border-top:1px solid #eee; margin:5px 0;">
+                        ⚠️ <strong>특이사항:</strong><br>
+                        <span style="color:#d32f2f;">${data.memo}</span>
+                    </div>
                 `;
             } else {
                 box.innerText = "학생 정보를 찾을 수 없습니다.";
