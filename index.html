@@ -26,7 +26,7 @@
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .welcome-badge { background: #e8f0fe; color: var(--primary); padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
 
-        /* 탭 버튼 (상단 고정 스타일) */
+        /* 탭 버튼 */
         .tabs { display: flex; gap: 8px; margin-bottom: 20px; background: #f8f9fa; padding: 5px; border-radius: 12px; }
         .tab-btn { flex: 1; padding: 12px; border: none; background: none; border-radius: 8px; font-weight: 600; color: #666; cursor: pointer; transition: 0.2s; }
         .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -36,46 +36,39 @@
         .section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 입력 폼 공통 */
+        /* 입력 폼 */
         input, select, textarea { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; box-sizing: border-box; outline: none; transition: 0.2s; }
         input:focus, textarea:focus { border-color: var(--primary); }
         textarea { resize: none; min-height: 120px; line-height: 1.5; }
 
-        /* 메인 액션 버튼 */
+        /* 버튼 */
         button.action-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(66,133,244,0.3); }
         button.action-btn:active { transform: scale(0.98); }
 
-        /* --- [모바일 최적화 학생 카드] --- */
+        /* 학생 카드 스타일 */
         .profile-card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #eee; margin-top: 10px; }
-        
         .profile-header { background: linear-gradient(135deg, #4285f4, #3367d6); color: white; padding: 25px 20px; text-align: center; }
         .profile-name { font-size: 1.8em; font-weight: 800; margin: 0; }
         .profile-birth { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 15px; font-size: 0.9em; margin-top: 8px; display: inline-block; }
-        
         .profile-body { padding: 10px 0; }
         .info-row { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #f4f6f8; }
         .info-row:last-child { border-bottom: none; }
-        
         .info-icon { width: 36px; height: 36px; background: #f0f5ff; color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0; }
         .info-content { flex: 1; display: flex; flex-direction: column; }
         .info-label { font-size: 0.8em; color: #888; margin-bottom: 3px; }
         .info-value { font-size: 1.05em; color: #333; font-weight: 500; }
-        
-        /* 전화 걸기 버튼 */
         .call-btn { text-decoration: none; background: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 8px; font-size: 0.85em; font-weight: bold; display: flex; align-items: center; gap: 5px; }
-        
-        /* 특이사항 박스 */
         .memo-box { background: #fff8f8; border-left: 4px solid #ff5252; padding: 15px; margin: 15px 20px 25px; border-radius: 4px; }
         .memo-label { color: #d32f2f; font-weight: bold; font-size: 0.9em; display: block; margin-bottom: 5px; }
         .memo-text { font-size: 0.95em; line-height: 1.5; color: #333; }
 
-        /* 툴바 (음성/파일) */
+        /* 툴바 */
         .toolbar { display: flex; gap: 8px; margin-bottom: 8px; }
         .tool-icon { background: #fff; border: 1px solid #ddd; padding: 8px 12px; border-radius: 20px; font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; color: #555; }
         .tool-icon.recording { background: #ffebee; color: #d32f2f; border-color: #d32f2f; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        /* AI 결과 박스 */
+        /* AI 결과 */
         .ai-result { background: #f8faff; padding: 20px; border-radius: 12px; margin-top: 15px; line-height: 1.6; border: 1px solid #e1e9f5; font-size: 0.95em; white-space: pre-wrap; display: none; }
     </style>
 </head>
@@ -88,7 +81,6 @@
             <h2>교사 업무 지원 시스템</h2>
             <p style="color:#666;">환영합니다, 선생님.</p>
         </div>
-        <!-- [수정필요 1] Client ID 입력 -->
         <div id="g_id_onload"
              data-client_id="1075901830630-jss5b3872vlu0p34t5i8j97gu3puonju.apps.googleusercontent.com" 
              data-callback="handleCredentialResponse">
@@ -145,7 +137,7 @@
             </div>
 
             <!-- 1. 개별 질문 모드 -->
-            <div class="card" style="border:1px solid #ddd; box-shadow:none; padding:15px; margin-bottom:20px;">
+            <div class="card" style="border:1px solid #ddd; box-shadow:none; padding:15px; margin-bottom:20px; border-radius:12px;">
                 <h5 style="margin:0 0 10px 0;"><i class="fas fa-comment-dots"></i> 개별 상담</h5>
                 <input type="text" id="ai-name" placeholder="학생 이름">
                 <textarea id="ai-query" placeholder="질문 (예: 이 학생의 특성 요약해줘)" style="min-height:80px;"></textarea>
@@ -153,8 +145,8 @@
                 <div id="ai-result" class="ai-result"></div>
             </div>
 
-            <!-- 2. 일괄 생성 모드 (신규 기능) -->
-            <div class="card" style="border:2px solid var(--primary); box-shadow:none; padding:15px; background:#fff;">
+            <!-- 2. 일괄 생성 모드 -->
+            <div class="card" style="border:2px solid var(--primary); box-shadow:none; padding:15px; background:#fff; border-radius:12px;">
                 <h5 style="margin:0 0 10px 0; color:var(--primary);"><i class="fas fa-magic"></i> 생기부 자료 일괄 생성</h5>
                 <p style="font-size:0.8em; color:#666; margin-bottom:10px;">
                     'Guidelines' 시트의 지침을 반영하여<br>
@@ -180,86 +172,31 @@
                 </div>
             </div>
         </div>
+    </div>
 
-    <!-- (스크립트 부분에 아래 함수들 추가) -->
+    <!-- 스크립트 (하나로 통합됨) -->
     <script>
-        // ... (기존 변수 및 함수들 유지) ...
-
-        // [신규] 교과목 이름 묻기
-        function askSubjectAndStart() {
-            const subject = prompt("어떤 과목의 세특을 생성할까요?\n(예: 국어, 수학, 사회)");
-            if (subject) {
-                startBatch('교과세특', subject);
-            }
-        }
-
-        // [신규] 일괄 작업 시작 (핵심 로직)
-        async function startBatch(type, subject = "") {
-            if (!confirm(`전체 학생의 [${type}${subject ? "-" + subject : ""}] 자료를 생성하시겠습니까?\n시간이 다소 소요됩니다.`)) return;
-
-            const statusBox = document.getElementById("batch-status");
-            const pText = document.getElementById("progress-text");
-            const pBar = document.getElementById("progress-bar");
-            const pLog = document.getElementById("current-log");
-
-            statusBox.style.display = "block";
-            pText.innerText = "학생 명단 불러오는 중...";
-            
-            // 1. 전체 학생 명단 가져오기
-            const names = await callAPI("getAllStudentNames", {});
-            
-            if (!names || names.length === 0) {
-                alert("학생 명단이 없습니다.");
-                statusBox.style.display = "none";
-                return;
-            }
-
-            // 2. 한 명씩 순서대로 처리 (for loop)
-            let successCount = 0;
-            for (let i = 0; i < names.length; i++) {
-                const name = names[i];
-                const percent = Math.round(((i + 1) / names.length) * 100);
-                
-                // UI 업데이트
-                pText.innerText = `진행 중: ${i + 1} / ${names.length} 명 (${percent}%)`;
-                pBar.style.width = `${percent}%`;
-                pLog.innerText = `▶ ${name} 학생 데이터 분석 및 생성 중...`;
-
-                try {
-                    // AI 생성 요청
-                    await callAPI("generateDraft", { 
-                        studentName: name, 
-                        type: type, 
-                        subject: subject 
-                    });
-                    successCount++;
-                } catch (e) {
-                    pLog.innerText = `⚠️ ${name} 생성 실패: ${e.message}`;
-                    console.error(e);
-                    // 실패해도 멈추지 않고 다음 학생으로 넘어감
-                }
-            }
-
-            pText.innerText = "완료!";
-            pLog.innerText = `총 ${successCount}명의 자료가 'Drafts' 시트에 저장되었습니다.`;
-            alert(`작업이 완료되었습니다.\n구글 시트의 'Drafts' 탭을 확인하세요.`);
-        }
-    </script>
         // ==========================================
-        // [수정필요 2] GAS 배포 주소 입력
+        // [설정] GAS 배포 주소
         // ==========================================
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwhPeaw3O2qAPkPEfGUGEc9_Kaqz_T5xULRb3jgzmPq7BNiAtKLl8dnIpoobxHz9wwzUg/exec"; 
         
         let USER_TOKEN = "";
 
-        function handleCredentialResponse(response) {
+        // 로그인 성공 콜백 (전역 함수로 선언)
+        window.handleCredentialResponse = function(response) {
             USER_TOKEN = response.credential;
-            const payload = JSON.parse(atob(response.credential.split('.')[1]));
-            document.getElementById("login-screen").style.display = "none";
-            document.getElementById("app-screen").style.display = "block";
-            document.getElementById("user-name").innerText = `👋 ${payload.name} 선생님`;
+            try {
+                const payload = JSON.parse(atob(response.credential.split('.')[1]));
+                document.getElementById("login-screen").style.display = "none";
+                document.getElementById("app-screen").style.display = "block";
+                document.getElementById("user-name").innerText = `👋 ${payload.name} 선생님`;
+            } catch (e) {
+                alert("로그인 정보 처리 중 오류: " + e.message);
+            }
         }
 
+        // 탭 전환
         function switchTab(id) {
             document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -267,6 +204,7 @@
             event.currentTarget.classList.add('active');
         }
 
+        // API 통신 공통 함수
         async function callAPI(action, payload) {
             try {
                 const res = await fetch(GAS_URL, {
@@ -278,16 +216,16 @@
                 return json.data;
             } catch (e) {
                 alert("오류: " + e.message);
-                return null;
+                throw e; // 호출한 곳에서 에러 처리하도록 던짐
             }
         }
 
-        // [기능 1] 학생 조회 (모바일 카드 UI)
+        // [기능 1] 학생 조회
         async function searchStudent() {
             const nameInput = document.getElementById("search-input");
             const name = nameInput.value.trim();
             if(!name) return;
-            nameInput.blur(); // 키패드 내리기
+            nameInput.blur();
 
             const box = document.getElementById("search-result");
             box.innerHTML = `<div style="text-align:center; padding:30px;"><i class="fas fa-spinner fa-spin"></i> 조회 중...</div>`;
@@ -331,7 +269,7 @@
             }
         }
 
-        // [기능 2] 기록 저장 (addLog 호출)
+        // [기능 2] 기록 저장
         async function saveLog() {
             const name = document.getElementById("log-name").value.trim();
             const content = document.getElementById("log-content").value.trim();
@@ -352,7 +290,7 @@
             }
         }
 
-        // [기능 3] AI 질문
+        // [기능 3] AI 질문 (개별)
         async function askAI() {
             const name = document.getElementById("ai-name").value.trim();
             const query = document.getElementById("ai-query").value.trim();
@@ -366,7 +304,58 @@
             if (data) box.innerText = data.answer;
         }
 
-        // 유틸리티 (음성/파일)
+        // [기능 4] 일괄 생성
+        function askSubjectAndStart() {
+            const subject = prompt("어떤 과목의 세특을 생성할까요?\n(예: 국어, 수학, 사회)");
+            if (subject) {
+                startBatch('교과세특', subject);
+            }
+        }
+
+        async function startBatch(type, subject = "") {
+            if (!confirm(`전체 학생의 [${type}${subject ? "-" + subject : ""}] 자료를 생성하시겠습니까?\n시간이 다소 소요됩니다.`)) return;
+
+            const statusBox = document.getElementById("batch-status");
+            const pText = document.getElementById("progress-text");
+            const pBar = document.getElementById("progress-bar");
+            const pLog = document.getElementById("current-log");
+
+            statusBox.style.display = "block";
+            pText.innerText = "학생 명단 불러오는 중...";
+            
+            // 1. 명단 가져오기
+            const names = await callAPI("getAllStudentNames", {});
+            
+            if (!names || names.length === 0) {
+                alert("학생 명단이 없습니다.");
+                statusBox.style.display = "none";
+                return;
+            }
+
+            // 2. 순차 처리
+            let successCount = 0;
+            for (let i = 0; i < names.length; i++) {
+                const name = names[i];
+                const percent = Math.round(((i + 1) / names.length) * 100);
+                
+                pText.innerText = `진행 중: ${i + 1} / ${names.length} 명 (${percent}%)`;
+                pBar.style.width = `${percent}%`;
+                pLog.innerText = `▶ ${name} 학생 데이터 분석 및 생성 중...`;
+
+                try {
+                    await callAPI("generateDraft", { studentName: name, type: type, subject: subject });
+                    successCount++;
+                } catch (e) {
+                    pLog.innerText = `⚠️ ${name} 실패: ${e.message}`;
+                }
+            }
+
+            pText.innerText = "완료!";
+            pLog.innerText = `총 ${successCount}건 완료. 'Drafts' 시트를 확인하세요.`;
+            alert(`작업 완료! Drafts 시트를 확인하세요.`);
+        }
+
+        // 유틸리티
         let recognition = null;
         if ('webkitSpeechRecognition' in window) {
             recognition = new webkitSpeechRecognition();
