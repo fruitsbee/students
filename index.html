@@ -40,7 +40,7 @@
         button.action-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 5px; }
         button.action-btn:active { opacity: 0.8; }
 
-        /* 카드 UI (학생증 스타일) */
+        /* 카드 UI */
         .card { background: white; border-radius: 16px; border: 1px solid #eee; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .card-header { background: linear-gradient(135deg, #4285f4, #1967d2); color: white; padding: 20px; text-align: center; }
         .card-name { font-size: 1.6em; font-weight: 800; margin: 0; }
@@ -72,6 +72,7 @@
     <div id="login-screen">
         <i class="fas fa-school" style="font-size: 3em; color: #4285f4; margin-bottom: 20px;"></i>
         <h2 style="margin-top:0;">Class Assistant</h2>
+        <!-- 선생님의 Client ID가 적용된 코드 -->
         <div id="g_id_onload" data-client_id="1075901830630-jss5b3872vlu0p34t5i8j97gu3puonju.apps.googleusercontent.com" data-callback="handleCredentialResponse"></div>
         <div class="g_id_signin" data-type="standard" data-size="large" data-width="250"></div>
     </div>
@@ -100,7 +101,7 @@
 
         <!-- 2. 기록 탭 -->
         <div id="tab-log" class="section">
-            <input type="text" id="l-name" placeholder="학생 이름">
+            <input type="text" id="l-name" placeholder="학생 이름 (필수 입력)">
             <select id="l-cate">
                 <option value="수업">수업</option>
                 <option value="생활">생활/행동</option>
@@ -146,17 +147,21 @@
     </div>
 
     <script>
-        // 설정
+        // 선생님의 GAS URL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwhPeaw3O2qAPkPEfGUGEc9_Kaqz_T5xULRb3jgzmPq7BNiAtKLl8dnIpoobxHz9wwzUg/exec"; 
         let TOKEN = "";
 
         // 로그인 콜백 (전역)
         window.handleCredentialResponse = function(res) {
             TOKEN = res.credential;
-            const user = JSON.parse(atob(res.credential.split('.')[1]));
-            document.getElementById("login-screen").style.display = "none";
-            document.getElementById("app-screen").style.display = "block";
-            document.getElementById("user-badge").innerText = user.name + " 선생님";
+            try {
+                const user = JSON.parse(atob(res.credential.split('.')[1]));
+                document.getElementById("login-screen").style.display = "none";
+                document.getElementById("app-screen").style.display = "block";
+                document.getElementById("user-badge").innerText = user.name + " 선생님";
+            } catch (e) {
+                alert("로그인 처리 중 오류가 발생했습니다.");
+            }
         };
 
         // UI 함수
@@ -246,58 +251,52 @@
             alert(`총 ${cnt}명 생성 완료.`);
         }
 
-        // 도구
+        // 도구 설정
         let rec = window.webkitSpeechRecognition ? new webkitSpeechRecognition() : null;
-        if(rec) { rec.lang = 'ko-KR'; rec.onstart = ()=>document.getElementById('btn-mic').classList.add('active'); rec.onend = ()=>document.getElementById('btn-mic').classList.remove('active'); rec.onresult = e => document.getElementById('l-content').value += " " + e.results[0][0].transcript; }
+        if(rec) { 
+            rec.lang = 'ko-KR'; 
+            rec.onstart = ()=>document.getElementById('btn-mic').classList.add('active'); 
+            rec.onend = ()=>document.getElementById('btn-mic').classList.remove('active'); 
+            rec.onresult = e => document.getElementById('l-content').value += " " + e.results[0][0].transcript; 
+        }
         function toggleMic() { rec ? (document.getElementById('btn-mic').classList.contains('active') ? rec.stop() : rec.start()) : alert("PC 크롬 사용 권장"); }
-        // [신규] 파일 불러오기 + 자동 마스킹 프리뷰
+
+        // [신규 기능] 파일 업로드 시 자동 마스킹 프리뷰
         function loadFile(input) {
             const file = input.files[0];
             if (!file) return;
 
-            // 1. 학생 이름 확인 (주인공을 알아야 마스킹 가능)
-            const studentName = document.getElementById("log-name").value.trim();
+            // 1. 학생 이름 체크
+            const studentName = document.getElementById("l-name").value.trim();
             if (!studentName) {
                 alert("먼저 [학생 이름]을 입력해주세요.\n(누가 대상 학생인지 알아야 마스킹할 수 있습니다)");
-                input.value = ""; // 파일 선택 초기화
+                input.value = ""; 
                 return;
             }
 
-            // 2. 파일 읽기
             const reader = new FileReader();
             reader.onload = async function(e) {
                 const rawText = e.target.result;
-                const textarea = document.getElementById("log-content");
+                const textarea = document.getElementById("l-content");
                 
-                // 로딩 표시
-                textarea.value = "⏳ 파일 내용을 분석하고 익명화하는 중입니다...\n잠시만 기다려주세요.";
-                textarea.disabled = true; // 처리 중 수정 방지
+                textarea.value = "⏳ 파일 분석 및 익명화 중...";
+                textarea.disabled = true;
 
-                try {
-                    // 3. GAS에 마스킹 요청 (저장 X, 변환만)
-                    const data = await api("previewMasking", { 
-                        studentName: studentName, 
-                        content: rawText 
-                    });
+                // 2. 프리뷰 요청
+                const data = await api("previewMasking", { studentName: studentName, content: rawText });
 
-                    if (data) {
-                        // 4. 결과 표시
-                        textarea.value = data.maskedContent;
-                        alert("파일 내용이 익명화되어 입력되었습니다.\n내용을 확인하고 수정 후 [저장]하세요.");
-                    } else {
-                        textarea.value = rawText; // 실패 시 원본 표시
-                        alert("마스킹 서버 연결 실패. 원본이 입력되었습니다.");
-                    }
-                } catch (error) {
+                if (data) {
+                    textarea.value = data.maskedContent;
+                    alert("익명화 완료! 내용을 확인하고 [저장]하세요.");
+                } else {
                     textarea.value = rawText;
-                    alert("오류 발생: " + error.message);
-                } finally {
-                    textarea.disabled = false; // 다시 수정 가능하게 풀기
-                    textarea.focus();
+                    alert("마스킹 실패 (원본 입력됨)");
                 }
+                textarea.disabled = false;
             };
-            
             reader.readAsText(file);
-            input.value = ""; // 초기화 (같은 파일 다시 선택 가능하게)
+            input.value = "";
         }
+    </script>
+</body>
 </html>
