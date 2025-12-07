@@ -100,7 +100,24 @@
         .card { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 15px; }
         input, select, textarea { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; box-sizing: border-box; background: #FAFAFA; font-family: inherit;}
         input:focus, textarea:focus, select:focus { border-color: var(--accent); outline: none; background: white; box-shadow: 0 0 0 3px rgba(211, 84, 0, 0.1); }
-        textarea { resize: vertical; min-height: 150px; line-height: 1.6; }
+        
+        /* --- [NEW] 반응형 자동 조절 Textarea 스타일 --- */
+        textarea.auto-resize {
+            resize: none;          /* 사용자 수동 조절 금지 */
+            overflow-y: hidden;    /* 기본 스크롤 숨김 */
+            min-height: 120px;     /* 최소 높이 */
+            line-height: 1.6;
+            transition: height 0.1s; /* 부드러운 전환 */
+        }
+        
+        /* 기기별 최대 높이 제한 (Max Height Limits) */
+        /* 1. 모바일 (기본) */
+        textarea.auto-resize { max-height: 150px; }
+        /* 2. 태블릿 (768px 이상) */
+        @media (min-width: 768px) { textarea.auto-resize { max-height: 300px; } }
+        /* 3. PC (1201px 이상) */
+        @media (min-width: 1201px) { textarea.auto-resize { max-height: 500px; } }
+        /* ------------------------------------------- */
 
         .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;}
         .btn-primary { background: var(--primary); color: white; }
@@ -224,7 +241,7 @@
                             </div>
                             
                             <div style="position:relative;">
-                                <textarea id="l-content" placeholder="오늘 있었던 일을 기록하세요.&#13;&#10;**중요한 이름**은 별표로 감싸면 익명화됩니다."></textarea>
+                                <textarea id="l-content" class="auto-resize" oninput="handleResize(this)" placeholder="오늘 있었던 일을 기록하세요.&#13;&#10;**중요한 이름**은 별표로 감싸면 익명화됩니다."></textarea>
                                 <div id="log-loading" class="loading-overlay"><i class="fas fa-spinner fa-spin"></i></div>
                             </div>
 
@@ -252,7 +269,7 @@
                     <div class="card area-question">
                         <h3 style="font-size:1.1rem; margin-top:0;"><i class="fas fa-comment-dots"></i> AI 어시스턴트</h3>
                         <input type="text" id="a-name" placeholder="대상 학생 이름" list="student-list-data">
-                        <textarea id="a-query" placeholder="예: 이 학생의 이번 학기 행동 특성을 요약해줘." style="min-height:120px;"></textarea>
+                        <textarea id="a-query" class="auto-resize" oninput="handleResize(this)" placeholder="예: 이 학생의 이번 학기 행동 특성을 요약해줘."></textarea>
                         <button class="btn btn-primary" onclick="askAI()"><i class="fas fa-paper-plane"></i> 질문하기</button>
                     </div>
 
@@ -314,6 +331,19 @@
         // ★ 선생님의 GAS URL로 반드시 교체하세요 ★
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwhPeaw3O2qAPkPEfGUGEc9_Kaqz_T5xULRb3jgzmPq7BNiAtKLl8dnIpoobxHz9wwzUg/exec"; 
         let TOKEN = "";
+
+        // [NEW] 입력창 높이 자동 조절 함수
+        function handleResize(el) {
+            el.style.height = 'auto'; // 높이 초기화
+            el.style.height = (el.scrollHeight) + 'px'; // 내용만큼 늘림
+
+            // CSS로 정한 max-height보다 내용이 많아지면 스크롤 생성
+            if (el.clientHeight < el.scrollHeight) {
+                el.style.overflowY = 'auto';
+            } else {
+                el.style.overflowY = 'hidden';
+            }
+        }
 
         // --- 1. 로그인 로직 ---
         window.handleCredentialResponse = async function(res) {
@@ -447,6 +477,8 @@
                 if(await api("addLog", { payload: { studentName: n, category: document.getElementById("l-cate").value, content: c } })) {
                     showToast("저장되었습니다! 📝");
                     document.getElementById("l-content").value = "";
+                    // 저장 후 높이 초기화
+                    handleResize(document.getElementById("l-content"));
                 }
             }
         }
@@ -465,8 +497,11 @@
                 const data = await api("previewMasking", { studentName: name, content: e.target.result });
                 document.getElementById("log-loading").style.display = "none";
                 if (data) {
-                    document.getElementById("l-content").value = data.maskedContent;
+                    const textArea = document.getElementById("l-content");
+                    textArea.value = data.maskedContent;
                     showToast("파일을 불러왔습니다.");
+                    // 파일 불러온 뒤 높이 자동 조절 트리거
+                    handleResize(textArea);
                 }
             };
             reader.readAsText(file);
@@ -547,7 +582,8 @@
                 }
                 if(finalScript) {
                     textarea.value += (textarea.value ? " " : "") + finalScript;
-                    textarea.scrollTop = textarea.scrollHeight;
+                    // 음성 인식 결과 들어갈 때마다 높이 조절
+                    handleResize(textarea);
                 }
             };
         }
