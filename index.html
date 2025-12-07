@@ -63,21 +63,27 @@
         .tool-btn { background: #fff; border: 1px solid #dadce0; padding: 8px 12px; border-radius: 20px; font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; color: #5f6368; }
         .tool-btn.active { background: #fce8e6; color: #c5221f; border-color: #c5221f; }
 
-        /* 결과박스 */
+        /* 결과박스 및 마스킹 하이라이트 */
         .result-box { background: #f8f9fa; padding: 15px; border-radius: 12px; margin-top: 15px; line-height: 1.6; border: 1px solid #dadce0; white-space: pre-wrap; display: none; }
+        
+        /* [NEW] 마스킹된 이름(**이름**)을 예쁘게 보여주는 스타일 */
+        .mask-highlight { 
+            color: #1a73e8; 
+            background-color: #e8f0fe; 
+            font-weight: bold; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+        }
     </style>
 </head>
 <body>
-    <!-- 로그인 화면 -->
     <div id="login-screen">
         <i class="fas fa-school" style="font-size: 3em; color: #4285f4; margin-bottom: 20px;"></i>
         <h2 style="margin-top:0;">Class Assistant</h2>
-        <!-- 선생님의 Client ID가 적용된 코드 -->
         <div id="g_id_onload" data-client_id="1075901830630-jss5b3872vlu0p34t5i8j97gu3puonju.apps.googleusercontent.com" data-callback="handleCredentialResponse"></div>
         <div class="g_id_signin" data-type="standard" data-size="large" data-width="250"></div>
     </div>
 
-    <!-- 앱 화면 -->
     <div id="app-screen" class="app-container">
         <header>
             <h3 style="margin:0;">Class Assistant</h3>
@@ -90,7 +96,6 @@
             <button class="tab-btn" onclick="goTab('ai')">AI업무</button>
         </div>
 
-        <!-- 1. 조회 탭 -->
         <div id="tab-search" class="section active">
             <div style="display:flex; gap:8px;">
                 <input type="text" id="s-input" placeholder="이름 (예: 철수)" onkeydown="if(event.key==='Enter') search()">
@@ -99,7 +104,6 @@
             <div id="s-result"></div>
         </div>
 
-        <!-- 2. 기록 탭 -->
         <div id="tab-log" class="section">
             <input type="text" id="l-name" placeholder="학생 이름 (필수 입력)">
             <select id="l-cate">
@@ -110,15 +114,14 @@
             </select>
             <div class="toolbar">
                 <button class="tool-btn" id="btn-mic" onclick="toggleMic()"><i class="fas fa-microphone"></i> 음성</button>
-                <label class="tool-btn"><i class="fas fa-file-upload"></i> 파일 <input type="file" accept=".txt" style="display:none" onchange="loadFile(this)"></label>
+                <label class="tool-btn"><i class="fas fa-file-upload"></i> 파일(TXT) <input type="file" accept=".txt" style="display:none" onchange="loadFile(this)"></label>
             </div>
+            <p style="font-size:0.8em; color:#666; margin:5px 0;">💡 팁: 익명화가 필요한 단어는 **별표**로 감싸주세요.</p>
             <textarea id="l-content" placeholder="내용 입력"></textarea>
             <button class="action-btn" onclick="saveLog()">저장하기</button>
         </div>
 
-        <!-- 3. AI 탭 -->
         <div id="tab-ai" class="section">
-            <!-- 개별 질문 -->
             <div class="card" style="padding:15px; box-shadow:none; border:1px solid #ddd;">
                 <h4 style="margin:0 0 10px 0;"><i class="fas fa-comment"></i> 개별 상담</h4>
                 <input type="text" id="a-name" placeholder="학생 이름">
@@ -127,7 +130,6 @@
                 <div id="a-result" class="result-box"></div>
             </div>
 
-            <!-- 일괄 생성 -->
             <div class="card" style="padding:15px; border:2px solid var(--primary); box-shadow:none;">
                 <h4 style="margin:0 0 5px 0; color:var(--primary);"><i class="fas fa-magic"></i> 생기부 일괄 생성</h4>
                 <p style="font-size:0.8em; color:#666; margin-bottom:15px;">Guidelines 시트 기반 → Drafts 시트 저장</p>
@@ -135,7 +137,6 @@
                     <button class="action-btn" style="background:#137333; margin:0;" onclick="batch('행동특성')">행특 생성</button>
                     <button class="action-btn" style="background:#ea8600; margin:0;" onclick="batchSub()">교과 생성</button>
                 </div>
-                <!-- 진행바 -->
                 <div id="batch-box" style="display:none; margin-top:15px; background:#f8f9fa; padding:10px; border-radius:8px;">
                     <div id="batch-txt" style="font-size:0.9em; font-weight:bold; margin-bottom:5px;">대기중...</div>
                     <div style="background:#dadce0; height:8px; border-radius:4px; overflow:hidden;">
@@ -147,7 +148,7 @@
     </div>
 
     <script>
-        // 선생님의 GAS URL
+        // 선생님의 GAS URL (백엔드 배포 후 생성된 URL을 여기에 넣으세요)
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwhPeaw3O2qAPkPEfGUGEc9_Kaqz_T5xULRb3jgzmPq7BNiAtKLl8dnIpoobxHz9wwzUg/exec"; 
         let TOKEN = "";
 
@@ -179,6 +180,13 @@
                 if(json.status === "error") throw new Error(json.message);
                 return json.data;
             } catch(e) { alert("오류: " + e.message); return null; }
+        }
+
+        // [NEW] 마크다운 시각화 함수: **이름** 을 파란색 태그로 변환
+        function renderMarkdown(text) {
+            if (!text) return "";
+            // 정규식: **내용** 을 찾아서 span 태그로 감싸줌
+            return text.replace(/\*\*(.*?)\*\*/g, '<span class="mask-highlight">$1</span>');
         }
 
         // 기능 1. 조회
@@ -223,9 +231,14 @@
             const q = document.getElementById("a-query").value;
             if(!q) return alert("질문하세요.");
             const box = document.getElementById("a-result");
-            box.style.display = "block"; box.innerText = "분석중...";
+            box.style.display = "block"; 
+            box.innerText = "분석중..."; // 로딩 중에는 텍스트만
+            
             const d = await api("askAI", { studentName: n, query: q });
-            if(d) box.innerText = d.answer;
+            if(d) {
+                // [NEW] 답변이 오면 마크다운 렌더링을 거쳐서 HTML로 표시
+                box.innerHTML = renderMarkdown(d.answer);
+            }
         }
 
         function batchSub() { const s = prompt("과목명?"); if(s) batch('교과세특', s); }
@@ -261,7 +274,7 @@
         }
         function toggleMic() { rec ? (document.getElementById('btn-mic').classList.contains('active') ? rec.stop() : rec.start()) : alert("PC 크롬 사용 권장"); }
 
-        // [신규 기능] 파일 업로드 시 자동 마스킹 프리뷰
+        // [신규 기능] 파일 업로드 시 자동 마스킹 프리뷰 (Backend 연동)
         function loadFile(input) {
             const file = input.files[0];
             if (!file) return;
@@ -282,12 +295,12 @@
                 textarea.value = "⏳ 파일 분석 및 익명화 중...";
                 textarea.disabled = true;
 
-                // 2. 프리뷰 요청
+                // 2. 프리뷰 요청 (백엔드가 **마킹**을 해서 돌려줌)
                 const data = await api("previewMasking", { studentName: studentName, content: rawText });
 
                 if (data) {
-                    textarea.value = data.maskedContent;
-                    alert("익명화 완료! 내용을 확인하고 [저장]하세요.");
+                    textarea.value = data.maskedContent; // 여기에는 **철수** 형태의 텍스트가 들어감 (수정 용이)
+                    alert("익명화 완료! 내용을 확인하고 [저장]하세요.\n**별표**로 감싸진 부분은 AI에게 비밀로 전달됩니다.");
                 } else {
                     textarea.value = rawText;
                     alert("마스킹 실패 (원본 입력됨)");
