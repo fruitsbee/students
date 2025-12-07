@@ -122,6 +122,27 @@
         #toast-container { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 30px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 10000; }
         #toast-container.show { opacity: 1; bottom: 90px; }
         .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 10; border-radius: 12px; font-weight: bold; color: var(--primary); }
+        /* [신규] AI 탭 전용 레이아웃 (Grid Area 적용) */
+        /* 모바일/태블릿: 순서대로 배치 (질문 -> 결과 -> 일괄생성) */
+        .ai-grid-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        /* PC 화면: 2단 배치 및 위치 지정 */
+        @media (min-width: 1201px) {
+            .ai-grid-layout {
+                grid-template-columns: 1fr 1fr;
+                grid-template-areas:
+                    "question result"
+                    "batch result"; /* 왼쪽엔 질문,일괄생성 / 오른쪽엔 결과 */
+                align-items: start;
+            }
+            .area-question { grid-area: question; }
+            .area-batch { grid-area: batch; }
+            .area-result { grid-area: result; position: sticky; top: 20px; }
+        }
     </style>
 </head>
 <body>
@@ -233,33 +254,51 @@
             <div id="tab-ai" class="section" style="display:none;">
                 <h2 class="page-title">AI 업무 보조</h2>
                 
-                <div class="split-view">
-                    <div class="input-container">
-                        <div class="card">
-                            <h3 style="font-size:1.1rem; margin-top:0;"><i class="fas fa-comment-dots"></i> AI 상담</h3>
-                            <input type="text" id="a-name" placeholder="대상 학생 이름">
-                            <textarea id="a-query" placeholder="예: 이 학생의 이번 학기 행동 특성을 요약해줘." style="min-height:120px;"></textarea>
-                            <button class="btn btn-primary" onclick="askAI()"><i class="fas fa-paper-plane"></i> 질문하기</button>
+                <div class="ai-grid-layout">
+                    
+                    <div class="card area-question">
+                        <h3 style="font-size:1.1rem; margin-top:0;"><i class="fas fa-comment-dots"></i> AI 어시스턴트</h3>
+                        <input type="text" id="a-name" placeholder="대상 학생 이름" list="student-list-data">
+                        <textarea id="a-query" placeholder="예: 이 학생의 이번 학기 행동 특성을 요약해줘." style="min-height:120px;"></textarea>
+                        <button class="btn btn-primary" onclick="askAI()"><i class="fas fa-paper-plane"></i> 질문하기</button>
+                    </div>
+
+                    <div class="result-container area-result">
+                        <div id="a-loading" style="display:none; text-align:center; padding:50px;">
+                            <i class="fas fa-robot fa-bounce" style="font-size:2rem; color:var(--primary);"></i>
+                            <p style="margin-top:20px;">AI가 분석 중입니다...</p>
+                        </div>
+                        
+                        <div id="a-result-box" style="display:none;">
+                            <label style="font-weight:bold; color:var(--accent); display:block; margin-bottom:5px;">AI 답변:</label>
+                            <div id="a-result" class="result-paper"></div>
                         </div>
 
-                        <div class="card" style="border:1px dashed var(--primary); background:#F4F6F7;">
-                            <h3 style="font-size:1.1rem; margin-top:0; color:var(--primary);"><i class="fas fa-magic"></i> 생기부 일괄 생성</h3>
-                            <p style="font-size:0.85rem; color:var(--text-sub); margin-bottom:15px;">
-                                전체 학생의 데이터를 바탕으로 초안을 작성합니다.<br>
-                                (Drafts 시트에 저장됩니다)
-                            </p>
-                            <div style="display:flex; gap:10px;">
-                                <button class="btn btn-accent" style="flex:1; background:#27AE60;" onclick="batch('행동특성')">행특</button>
-                                <button class="btn btn-accent" style="flex:1; background:#F39C12;" onclick="batchSub()">교과</button>
-                            </div>
-                            <div id="batch-box" style="display:none; margin-top:15px; background:#fff; padding:10px; border-radius:8px; border:1px solid #ddd;">
-                                <div id="batch-txt" style="font-size:0.8rem; font-weight:bold; margin-bottom:5px;">준비 중...</div>
-                                <div style="background:#ddd; height:6px; border-radius:3px; overflow:hidden;">
-                                    <div id="batch-bar" style="width:0%; height:100%; background:var(--accent); transition:width 0.3s;"></div>
-                                </div>
+                        <div id="a-placeholder" style="text-align:center; color:var(--text-sub); padding:40px 20px; background:#fff; border-radius:12px; border:1px dashed #ddd;">
+                            <i class="fas fa-sparkles" style="font-size:2rem; opacity:0.3; margin-bottom:15px;"></i>
+                            <p style="font-size:0.9rem;">질문하면 답변이<br>여기에 표시됩니다.</p>
+                        </div>
+                    </div>
+
+                    <div class="card area-batch" style="border:1px dashed var(--primary); background:#F4F6F7;">
+                        <h3 style="font-size:1.1rem; margin-top:0; color:var(--primary);"><i class="fas fa-magic"></i> 생기부 일괄 생성</h3>
+                        <p style="font-size:0.85rem; color:var(--text-sub); margin-bottom:15px;">
+                            전체 학생 데이터를 바탕으로 초안을 작성합니다.
+                        </p>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-accent" style="flex:1; background:#27AE60;" onclick="batch('행동특성')">행특</button>
+                            <button class="btn btn-accent" style="flex:1; background:#F39C12;" onclick="batchSub()">교과</button>
+                        </div>
+                        <div id="batch-box" style="display:none; margin-top:15px; background:#fff; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                            <div id="batch-txt" style="font-size:0.8rem; font-weight:bold; margin-bottom:5px;">준비 중...</div>
+                            <div style="background:#ddd; height:6px; border-radius:3px; overflow:hidden;">
+                                <div id="batch-bar" style="width:0%; height:100%; background:var(--accent); transition:width 0.3s;"></div>
                             </div>
                         </div>
                     </div>
+
+                </div>
+            </div>
 
                     <div class="result-container">
                         <div id="a-loading" style="display:none; text-align:center; padding:50px;">
