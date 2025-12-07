@@ -180,6 +180,30 @@
             align-items: center; justify-content: center; z-index: 10;
             border-radius: 12px; font-weight: bold; color: var(--primary);
         }
+        /* 녹음 중 애니메이션 효과 */
+        .mic-active {
+            color: #E74C3C !important;         /* 빨간색 글씨 */
+            border-color: #E74C3C !important;  /* 빨간색 테두리 */
+            background-color: #FDEDEC !important;
+            animation: pulse-red 1.5s infinite; /* 깜빡임 효과 */
+        }
+        
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(231, 76, 60, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+
+        /* 듣고 있어요 상태 메시지 */
+        #mic-status {
+            display: none; /* 기본 숨김 */
+            color: #E74C3C;
+            font-weight: bold;
+            font-size: 0.85rem;
+            align-items: center;
+            gap: 5px;
+            margin-left: auto; /* 오른쪽 정렬 */
+        }
     </style>
 </head>
 <body>
@@ -255,8 +279,17 @@
                             </select>
                             
                             <div class="toolbar">
-                                <div class="tool-chip" id="btn-mic" onclick="toggleMic()"><i class="fas fa-microphone"></i> 음성</div>
-                                <label class="tool-chip"><i class="fas fa-file-upload"></i> 파일(TXT) <input type="file" accept=".txt" style="display:none" onchange="loadFile(this)"></label>
+                                <div class="tool-chip" id="btn-mic" onclick="toggleMic()">
+                                    <i class="fas fa-microphone"></i> 음성
+                                </div>
+                                <label class="tool-chip">
+                                    <i class="fas fa-file-upload"></i> 파일(TXT) 
+                                    <input type="file" accept=".txt" style="display:none" onchange="loadFile(this)">
+                                </label>
+                                
+                                <div id="mic-status">
+                                    <i class="fas fa-circle fa-beat" style="font-size:0.6rem;"></i> 듣고 있어요...
+                                </div>
                             </div>
                             
                             <div style="position:relative;">
@@ -417,26 +450,62 @@
         // --- 4. 기능별 함수 ---
 
         // [조회]
+        // [조회] 함수 수정됨
         async function search() {
             const name = document.getElementById("s-input").value.trim();
             if(!name) return showToast("이름을 입력해주세요.");
             
             const box = document.getElementById("s-result");
+            // 로딩 화면
             box.innerHTML = `<div style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>생활기록부를 찾는 중...</div>`;
             
             const d = await api("getStudentInfo", { studentName: name });
             if(d) {
+                // (부)보호자 전화번호가 있을 때만 통화 버튼 생성
+                const subParentCallBtn = d.parentSub ? `<a href="tel:${d.parentSub}" class="call-btn" style="text-decoration:none;">통화</a>` : '';
+
                 box.innerHTML = `
                 <div class="card" style="border-top: 4px solid var(--accent);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                         <h2 style="margin:0;">${d.name}</h2>
                         <span style="background:#eee; padding:4px 8px; border-radius:4px; font-size:0.9rem;">${d.birth}</span>
                     </div>
-                    <div style="display:grid; gap:10px;">
-                        <div><strong>📞 보호자:</strong> ${d.parentMain} <a href="tel:${d.parentMain}" style="text-decoration:none;">[전화]</a></div>
-                        <div><strong>🏚️ 주소:</strong> ${d.address}</div>
-                        <div><strong>🏫 활동:</strong> ${d.afterSchool||"-"} / ${d.dure||"-"}</div>
+                    
+                    <div class="info-list">
+                        <div class="info-item">
+                            <div class="info-icon"><i class="fas fa-user-check"></i></div>
+                            <div class="info-text">
+                                <span class="info-label">(주)보호자</span>
+                                <span class="info-value">${d.parentMain}</span>
+                            </div>
+                            <a href="tel:${d.parentMain}" class="call-btn" style="text-decoration:none;">통화</a>
+                        </div>
+
+                        <div class="info-item">
+                            <div class="info-icon"><i class="fas fa-user-friends"></i></div>
+                            <div class="info-text">
+                                <span class="info-label">(부)보호자</span>
+                                <span class="info-value">${d.parentSub || "-"}</span>
+                            </div>
+                            ${subParentCallBtn}
+                        </div>
+
+                        <div class="info-item">
+                            <div class="info-icon"><i class="fas fa-school"></i></div>
+                            <div class="info-text">
+                                <span class="info-label">활동</span>
+                                <span class="info-value">${d.afterSchool||"-"} / ${d.dure||"-"}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
+                            <div class="info-text">
+                                <span class="info-label">주소</span>
+                                <span class="info-value" style="font-size:0.9rem">${d.address}</span>
+                            </div>
+                        </div>
                     </div>
+
                     <div style="margin-top:20px; background:#FEF9E7; padding:15px; border-radius:8px;">
                         <strong>⚠️ 특이사항</strong><br>
                         ${d.memo||"특이사항 없음"}
@@ -446,7 +515,7 @@
                 box.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-sub);">검색 결과가 없습니다.</div>`;
             }
         }
-
+        
         // [기록]
         async function saveLog() {
             const n = document.getElementById("l-name").value;
@@ -529,17 +598,80 @@
             showToast(`총 ${cnt}명의 생기부 초안이 생성되었습니다.`);
         }
 
-        // 음성 인식
-        let rec = window.webkitSpeechRecognition ? new webkitSpeechRecognition() : null;
-        if(rec) { 
-            rec.lang = 'ko-KR'; 
-            rec.onstart = ()=> document.getElementById('btn-mic').classList.add('active'); 
-            rec.onend = ()=> document.getElementById('btn-mic').classList.remove('active'); 
-            rec.onresult = e => document.getElementById('l-content').value += " " + e.results[0][0].transcript; 
+       // --- 음성 인식 기능 (토글 개선판) ---
+        let rec = null;
+        let isRecording = false; // 현재 녹음 중인지 상태를 기억하는 변수
+
+        if (window.webkitSpeechRecognition) {
+            rec = new webkitSpeechRecognition();
+            rec.lang = 'ko-KR';
+            rec.continuous = true;  // 계속 듣기 모드
+            rec.interimResults = true; // 중간 결과도 표시 (실시간 타이핑 효과)
+
+            // 1. 녹음 시작될 때 UI 변경
+            rec.onstart = () => {
+                isRecording = true;
+                const btn = document.getElementById('btn-mic');
+                btn.classList.add('mic-active'); // 빨간 깜빡임 추가
+                btn.innerHTML = '<i class="fas fa-stop"></i> 중지'; // 버튼 글자 변경
+                document.getElementById('mic-status').style.display = 'flex'; // "듣고 있어요" 표시
+            };
+
+            // 2. 녹음 종료될 때 UI 복구
+            rec.onend = () => {
+                isRecording = false;
+                const btn = document.getElementById('btn-mic');
+                btn.classList.remove('mic-active'); // 깜빡임 제거
+                btn.innerHTML = '<i class="fas fa-microphone"></i> 음성'; // 버튼 글자 복구
+                document.getElementById('mic-status').style.display = 'none'; // "듣고 있어요" 숨김
+            };
+
+            // 3. 음성 인식 결과 처리
+            rec.onresult = (e) => {
+                const transcript = Array.from(e.results)
+                    .map(result => result[0].transcript)
+                    .join('');
+                
+                // 기존 내용 뒤에 붙이기 (입력창 포커스 유지)
+                const textarea = document.getElementById('l-content');
+                
+                // 마지막 단어만 교체하는 방식으로 중복 방지 (간단한 처리)
+                // 실제로는 interimResults 때문에 텍스트가 깜빡일 수 있으나
+                // isFinal 체크하여 확정된 텍스트만 넣는게 깔끔함.
+                
+                let finalScript = "";
+                for (let i = e.resultIndex; i < e.results.length; ++i) {
+                    if (e.results[i].isFinal) {
+                        finalScript += e.results[i][0].transcript;
+                    }
+                }
+                
+                if(finalScript) {
+                    textarea.value += (textarea.value ? " " : "") + finalScript;
+                    textarea.scrollTop = textarea.scrollHeight; // 스크롤 내리기
+                }
+            };
+
+            // 에러 처리 (권한 거부 등)
+            rec.onerror = (e) => {
+                console.error("음성 인식 에러:", e.error);
+                if(isRecording) rec.stop(); // 에러나면 멈춤 처리
+            };
         }
-        function toggleMic() { 
-            if(!rec) return alert("이 브라우저는 음성 인식을 지원하지 않습니다. (Chrome 권장)");
-            document.getElementById('btn-mic').classList.contains('active') ? rec.stop() : rec.start(); 
+
+        // [토글 함수]
+        function toggleMic() {
+            if (!rec) return alert("이 브라우저는 음성 인식을 지원하지 않습니다. (Chrome 권장)");
+            
+            if (isRecording) {
+                // 녹음 중이면 멈춤
+                rec.stop(); 
+                // onend가 실행되면서 UI가 복구됩니다.
+            } else {
+                // 녹음 중이 아니면 시작
+                rec.start();
+                // onstart가 실행되면서 UI가 변경됩니다.
+            }
         }
 
     </script>
