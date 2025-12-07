@@ -34,7 +34,13 @@
         /* 입력요소 */
         input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #dadce0; border-radius: 8px; font-size: 16px; box-sizing: border-box; outline: none; }
         input:focus, textarea:focus { border-color: var(--primary); border-width: 2px; padding: 11px; }
-        textarea { resize: none; min-height: 120px; line-height: 1.5; }
+        
+        /* [수정됨] textarea 크기 조절 핸들 허용 (세로 방향만) */
+        textarea { 
+            resize: vertical; /* vertical: 상하 조절 가능, none: 조절 불가 */
+            min-height: 120px; 
+            line-height: 1.5; 
+        }
 
         /* 버튼 */
         button.action-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 5px; }
@@ -63,25 +69,29 @@
         .tool-btn { background: #fff; border: 1px solid #dadce0; padding: 8px 12px; border-radius: 20px; font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; color: #5f6368; }
         .tool-btn.active { background: #fce8e6; color: #c5221f; border-color: #c5221f; }
 
-        /* 결과박스 및 마스킹 하이라이트 */
+        /* 결과박스 */
         .result-box { background: #f8f9fa; padding: 15px; border-radius: 12px; margin-top: 15px; line-height: 1.6; border: 1px solid #dadce0; white-space: pre-wrap; display: none; }
         
-        /* [NEW] 마스킹된 이름(**이름**)을 예쁘게 보여주는 스타일 */
-        .mask-highlight { 
-            color: #1a73e8; 
-            background-color: #e8f0fe; 
-            font-weight: bold; 
-            padding: 2px 6px; 
-            border-radius: 4px; 
-        }
+        /* 마스킹 강조 스타일 */
+        .mask-highlight { color: #1a73e8; background-color: #e8f0fe; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
+        
+        /* 로딩 스피너 컨테이너 */
+        #login-loading { display: none; margin-top: 20px; color: #5f6368; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="login-screen">
         <i class="fas fa-school" style="font-size: 3em; color: #4285f4; margin-bottom: 20px;"></i>
         <h2 style="margin-top:0;">Class Assistant</h2>
-        <div id="g_id_onload" data-client_id="1075901830630-jss5b3872vlu0p34t5i8j97gu3puonju.apps.googleusercontent.com" data-callback="handleCredentialResponse"></div>
-        <div class="g_id_signin" data-type="standard" data-size="large" data-width="250"></div>
+        
+        <div id="g_btn_wrapper">
+            <div id="g_id_onload" data-client_id="1075901830630-jss5b3872vlu0p34t5i8j97gu3puonju.apps.googleusercontent.com" data-callback="handleCredentialResponse"></div>
+            <div class="g_id_signin" data-type="standard" data-size="large" data-width="250"></div>
+        </div>
+
+        <div id="login-loading">
+            <i class="fas fa-circle-notch fa-spin"></i> 계정 확인 중...
+        </div>
     </div>
 
     <div id="app-screen" class="app-container">
@@ -148,20 +158,36 @@
     </div>
 
     <script>
-        // 선생님의 GAS URL (백엔드 배포 후 생성된 URL을 여기에 넣으세요)
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwhPeaw3O2qAPkPEfGUGEc9_Kaqz_T5xULRb3jgzmPq7BNiAtKLl8dnIpoobxHz9wwzUg/exec"; 
         let TOKEN = "";
 
-        // 로그인 콜백 (전역)
-        window.handleCredentialResponse = function(res) {
+        // [수정됨] 로그인 검증 로직 강화
+        window.handleCredentialResponse = async function(res) {
             TOKEN = res.credential;
+            
+            // 1. UI 상태 변경 (로딩 중 표시)
+            document.getElementById("g_btn_wrapper").style.display = "none";
+            document.getElementById("login-loading").style.display = "block";
+
             try {
-                const user = JSON.parse(atob(res.credential.split('.')[1]));
-                document.getElementById("login-screen").style.display = "none";
-                document.getElementById("app-screen").style.display = "block";
-                document.getElementById("user-badge").innerText = user.name + " 선생님";
+                // 2. 백엔드에 'login' 액션으로 권한 확인 요청
+                // (이때 이메일이 다르면 백엔드에서 에러를 던짐)
+                const userData = await api("login", {}, true); 
+                
+                if (userData) {
+                    // 3. 성공 시 화면 전환
+                    document.getElementById("login-screen").style.display = "none";
+                    document.getElementById("app-screen").style.display = "block";
+                    document.getElementById("user-badge").innerText = userData.name + " 선생님";
+                } else {
+                    // 데이터가 없으면 실패로 간주
+                    throw new Error("로그인 실패");
+                }
             } catch (e) {
-                alert("로그인 처리 중 오류가 발생했습니다.");
+                // 4. 실패 시 경고 및 리셋
+                alert("🚫 접근 권한이 없는 계정입니다.\n(등록된 이메일로 로그인해주세요)");
+                // 페이지 새로고침하여 초기화
+                location.reload();
             }
         };
 
@@ -173,23 +199,33 @@
             event.currentTarget.classList.add('active');
         }
 
-        async function api(act, pl) {
+        async function api(act, pl, isLogin = false) {
             try {
                 const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ token: TOKEN, action: act, ...pl }) });
                 const json = await res.json();
-                if(json.status === "error") throw new Error(json.message);
+                
+                if(json.status === "error") {
+                    // 로그인 시도 중 에러는 호출한 곳(handleCredentialResponse)에서 catch하도록 throw
+                    if(isLogin) throw new Error(json.message);
+                    
+                    // 일반 사용 중 에러는 여기서 alert
+                    alert("오류: " + json.message); 
+                    return null;
+                }
                 return json.data;
-            } catch(e) { alert("오류: " + e.message); return null; }
+            } catch(e) { 
+                if(isLogin) throw e; 
+                alert("통신 오류: " + e.message); 
+                return null; 
+            }
         }
 
-        // [NEW] 마크다운 시각화 함수: **이름** 을 파란색 태그로 변환
         function renderMarkdown(text) {
             if (!text) return "";
-            // 정규식: **내용** 을 찾아서 span 태그로 감싸줌
             return text.replace(/\*\*(.*?)\*\*/g, '<span class="mask-highlight">$1</span>');
         }
 
-        // 기능 1. 조회
+        // --- 기능 함수들 (기존과 동일) ---
         async function search() {
             const name = document.getElementById("s-input").value.trim();
             if(!name) return;
@@ -213,7 +249,6 @@
             } else { box.innerHTML = `<div style="text-align:center; padding:20px; color:#888;">정보 없음</div>`; }
         }
 
-        // 기능 2. 기록
         async function saveLog() {
             const n = document.getElementById("l-name").value;
             const c = document.getElementById("l-content").value;
@@ -225,20 +260,16 @@
             }
         }
 
-        // 기능 3. AI
         async function askAI() {
             const n = document.getElementById("a-name").value;
             const q = document.getElementById("a-query").value;
             if(!q) return alert("질문하세요.");
             const box = document.getElementById("a-result");
             box.style.display = "block"; 
-            box.innerText = "분석중..."; // 로딩 중에는 텍스트만
+            box.innerText = "분석중...";
             
             const d = await api("askAI", { studentName: n, query: q });
-            if(d) {
-                // [NEW] 답변이 오면 마크다운 렌더링을 거쳐서 HTML로 표시
-                box.innerHTML = renderMarkdown(d.answer);
-            }
+            if(d) box.innerHTML = renderMarkdown(d.answer);
         }
 
         function batchSub() { const s = prompt("과목명?"); if(s) batch('교과세특', s); }
@@ -264,7 +295,6 @@
             alert(`총 ${cnt}명 생성 완료.`);
         }
 
-        // 도구 설정
         let rec = window.webkitSpeechRecognition ? new webkitSpeechRecognition() : null;
         if(rec) { 
             rec.lang = 'ko-KR'; 
@@ -274,12 +304,10 @@
         }
         function toggleMic() { rec ? (document.getElementById('btn-mic').classList.contains('active') ? rec.stop() : rec.start()) : alert("PC 크롬 사용 권장"); }
 
-        // [신규 기능] 파일 업로드 시 자동 마스킹 프리뷰 (Backend 연동)
         function loadFile(input) {
             const file = input.files[0];
             if (!file) return;
 
-            // 1. 학생 이름 체크
             const studentName = document.getElementById("l-name").value.trim();
             if (!studentName) {
                 alert("먼저 [학생 이름]을 입력해주세요.\n(누가 대상 학생인지 알아야 마스킹할 수 있습니다)");
@@ -295,11 +323,10 @@
                 textarea.value = "⏳ 파일 분석 및 익명화 중...";
                 textarea.disabled = true;
 
-                // 2. 프리뷰 요청 (백엔드가 **마킹**을 해서 돌려줌)
                 const data = await api("previewMasking", { studentName: studentName, content: rawText });
 
                 if (data) {
-                    textarea.value = data.maskedContent; // 여기에는 **철수** 형태의 텍스트가 들어감 (수정 용이)
+                    textarea.value = data.maskedContent;
                     alert("익명화 완료! 내용을 확인하고 [저장]하세요.\n**별표**로 감싸진 부분은 AI에게 비밀로 전달됩니다.");
                 } else {
                     textarea.value = rawText;
