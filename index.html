@@ -3,337 +3,546 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Class Assistant</title>
+    <title>교무 수첩 (Class Assistant)</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <style>
-        :root { --primary: #4285f4; --bg: #f2f4f7; --text: #333; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); }
-        
-        /* 레이아웃 */
-        .app-container { max-width: 600px; margin: 0 auto; min-height: 100vh; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
-        
-        /* 로그인 */
-        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; text-align: center; }
-        
-        /* 메인화면 */
-        #app-screen { display: none; padding: 15px; padding-bottom: 80px; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px 5px; }
-        .user-badge { background: #e8f0fe; color: var(--primary); padding: 5px 12px; border-radius: 15px; font-size: 0.9em; font-weight: bold; }
-
-        /* 탭 */
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; background: #f1f3f4; padding: 5px; border-radius: 12px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; background: none; border-radius: 8px; font-weight: 600; color: #5f6368; cursor: pointer; transition: 0.2s; }
-        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-
-        /* 섹션 */
-        .section { display: none; animation: fadeIn 0.3s; }
-        .section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* 입력요소 */
-        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #dadce0; border-radius: 8px; font-size: 16px; box-sizing: border-box; outline: none; }
-        input:focus, textarea:focus { border-color: var(--primary); border-width: 2px; padding: 11px; }
-        
-        /* [수정됨] textarea 크기 조절 핸들 허용 (세로 방향만) */
-        textarea { 
-            resize: vertical; /* vertical: 상하 조절 가능, none: 조절 불가 */
-            min-height: 120px; 
-            line-height: 1.5; 
+        :root {
+            /* Warm & Professional Color Palette */
+            --bg-color: #F9F9F7;       /* 종이 질감 미색 */
+            --sidebar-bg: #2C3E50;     /* 차분한 네이비 */
+            --sidebar-text: #ECF0F1;
+            --primary: #34495E;        /* 기본 텍스트/버튼 */
+            --accent: #D35400;         /* 포인트(벽돌색) - 저장/중요 */
+            --highlight: #F1C40F;      /* 형광펜 노란색 */
+            --card-bg: #FFFFFF;
+            --border: #E0E0E0;
+            --text-main: #2C3E50;
+            --text-sub: #7F8C8D;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
-        /* 버튼 */
-        button.action-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 5px; }
-        button.action-btn:active { opacity: 0.8; }
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden; /* 스크롤은 내부 컨테이너에서 처리 */
+        }
 
-        /* 카드 UI */
-        .card { background: white; border-radius: 16px; border: 1px solid #eee; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        .card-header { background: linear-gradient(135deg, #4285f4, #1967d2); color: white; padding: 20px; text-align: center; }
-        .card-name { font-size: 1.6em; font-weight: 800; margin: 0; }
-        .card-sub { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 12px; font-size: 0.85em; margin-top: 5px; display: inline-block; }
-        
-        .info-list { padding: 10px 0; }
-        .info-item { display: flex; align-items: center; padding: 12px 20px; border-bottom: 1px solid #f1f3f4; }
-        .info-item:last-child { border-bottom: none; }
-        .info-icon { width: 32px; height: 32px; background: #e8f0fe; color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; }
-        .info-text { flex: 1; display: flex; flex-direction: column; }
-        .info-label { font-size: 0.75em; color: #5f6368; margin-bottom: 2px; }
-        .info-value { font-size: 1em; color: #202124; font-weight: 500; }
-        .call-btn { text-decoration: none; background: #e6f4ea; color: #137333; padding: 6px 12px; border-radius: 6px; font-size: 0.8em; font-weight: bold; }
-        
-        .memo-box { background: #fce8e6; border-left: 4px solid #c5221f; padding: 15px; margin: 0 15px 15px; border-radius: 4px; }
-        .memo-title { color: #c5221f; font-weight: bold; font-size: 0.9em; display: block; margin-bottom: 5px; }
-        
-        /* 툴바 */
-        .toolbar { display: flex; gap: 8px; margin-bottom: 10px; }
-        .tool-btn { background: #fff; border: 1px solid #dadce0; padding: 8px 12px; border-radius: 20px; font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; color: #5f6368; }
-        .tool-btn.active { background: #fce8e6; color: #c5221f; border-color: #c5221f; }
+        /* --- [1] 로그인 화면 --- */
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 9999;
+        }
+        .login-card {
+            background: white; padding: 40px; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center;
+            max-width: 320px; width: 90%; border: 1px solid var(--border);
+        }
 
-        /* 결과박스 */
-        .result-box { background: #f8f9fa; padding: 15px; border-radius: 12px; margin-top: 15px; line-height: 1.6; border: 1px solid #dadce0; white-space: pre-wrap; display: none; }
+        /* --- [2] 메인 레이아웃 (반응형) --- */
+        .app-layout { display: flex; height: 100vh; }
+
+        /* A. 사이드바 (PC/태블릿용) */
+        .sidebar {
+            width: 240px; background: var(--sidebar-bg); color: var(--sidebar-text);
+            display: flex; flex-direction: column; padding: 20px;
+            flex-shrink: 0;
+        }
+        .sidebar-brand { font-size: 1.2rem; font-weight: 700; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
+        .sidebar-menu { display: flex; flex-direction: column; gap: 10px; }
+        .menu-btn {
+            background: transparent; border: none; color: #BDC3C7;
+            padding: 12px 15px; text-align: left; font-size: 1rem;
+            cursor: pointer; border-radius: 8px; transition: 0.2s;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .menu-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .menu-btn.active { background: var(--accent); color: white; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .user-profile { margin-top: auto; font-size: 0.9rem; color: #BDC3C7; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+
+        /* B. 메인 컨텐츠 영역 */
+        .main-content { flex: 1; overflow-y: auto; padding: 20px; position: relative; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 20px; display: none; /* PC에서만 보임 */ }
+
+        /* C. 모바일 하단 네비게이션 (모바일용) */
+        .mobile-nav {
+            display: none; position: fixed; bottom: 0; left: 0; width: 100%;
+            background: white; border-top: 1px solid var(--border);
+            justify-content: space-around; padding: 10px 0; z-index: 100;
+        }
+        .nav-item {
+            background: none; border: none; color: var(--text-sub);
+            display: flex; flex-direction: column; align-items: center;
+            font-size: 0.75rem; gap: 4px;
+        }
+        .nav-item.active { color: var(--accent); }
+        .nav-item i { font-size: 1.2rem; }
+
+        /* --- [3] 2단 분할 레이아웃 (Split View) --- */
+        .split-view {
+            display: grid; grid-template-columns: 1fr; gap: 20px;
+            max-width: 1200px; margin: 0 auto;
+        }
+
+        /* --- [4] UI 컴포넌트 --- */
+        .card {
+            background: var(--card-bg); border-radius: 12px;
+            padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border);
+        }
         
-        /* 마스킹 강조 스타일 */
-        .mask-highlight { color: #1a73e8; background-color: #e8f0fe; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
+        input, select, textarea {
+            width: 100%; padding: 12px; margin-bottom: 12px;
+            border: 1px solid var(--border); border-radius: 8px;
+            font-size: 1rem; font-family: inherit;
+            box-sizing: border-box; transition: 0.2s;
+            background: #FAFAFA;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent); outline: none; background: white;
+            box-shadow: 0 0 0 3px rgba(211, 84, 0, 0.1);
+        }
+        textarea { resize: vertical; min-height: 150px; line-height: 1.6; }
+
+        .btn {
+            width: 100%; padding: 14px; border: none; border-radius: 8px;
+            font-size: 1rem; font-weight: 700; cursor: pointer;
+            transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-accent { background: var(--accent); color: white; }
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
         
-        /* 로딩 스피너 컨테이너 */
-        #login-loading { display: none; margin-top: 20px; color: #5f6368; font-weight: bold; }
+        /* 툴바 (파일업로드, 마이크) */
+        .toolbar { display: flex; gap: 10px; margin-bottom: 10px; }
+        .tool-chip {
+            background: white; border: 1px solid var(--border);
+            padding: 6px 12px; border-radius: 20px; font-size: 0.9rem;
+            color: var(--text-sub); cursor: pointer; display: flex; align-items: center; gap: 6px;
+        }
+        .tool-chip:hover { background: #f0f0f0; }
+        .tool-chip.active { background: #FDEDEC; color: var(--accent); border-color: var(--accent); }
+
+        /* 결과 박스 (종이 느낌) */
+        .result-paper {
+            background: #fff; border: 1px solid #ddd;
+            padding: 20px; border-radius: 4px;
+            border-left: 4px solid var(--accent);
+            line-height: 1.7; min-height: 100px;
+            white-space: pre-wrap;
+            /* 노트 줄무늬 효과 */
+            background-image: linear-gradient(#eee .1rem, transparent .1rem);
+            background-size: 100% 2rem;
+            background-position: 0 1.5rem;
+        }
+
+        /* 마스킹 형광펜 효과 */
+        .mask-highlight {
+            background: linear-gradient(to top, var(--highlight) 50%, transparent 50%);
+            font-weight: bold; padding: 0 2px;
+        }
+
+        /* --- [5] 미디어 쿼리 (반응형 처리) --- */
+        @media (max-width: 768px) {
+            .sidebar { display: none; } /* 모바일에서 사이드바 숨김 */
+            .mobile-nav { display: flex; } /* 하단바 표시 */
+            .main-content { padding-bottom: 80px; } /* 하단바 공간 확보 */
+            .split-view { grid-template-columns: 1fr; } /* 1단으로 변경 */
+        }
+        @media (min-width: 769px) {
+            .page-title { display: block; }
+            /* PC에서는 입력창과 결과창을 좌우로 배치 */
+            .split-view { grid-template-columns: 1fr 1fr; align-items: start; }
+            .result-container { position: sticky; top: 20px; } /* 결과창 스크롤 따라오기 */
+        }
+
+        /* --- [6] 알림 (Toast & Modal) --- */
+        #toast-container {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 12px 24px;
+            border-radius: 30px; font-size: 0.9rem; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s; z-index: 10000;
+        }
+        #toast-container.show { opacity: 1; bottom: 90px; }
+
+        /* 로딩 오버레이 */
+        .loading-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); display: none;
+            align-items: center; justify-content: center; z-index: 10;
+            border-radius: 12px; font-weight: bold; color: var(--primary);
+        }
     </style>
 </head>
 <body>
-    <div id="login-screen">
-        <i class="fas fa-school" style="font-size: 3em; color: #4285f4; margin-bottom: 20px;"></i>
-        <h2 style="margin-top:0;">Class Assistant</h2>
-        
-        <div id="g_btn_wrapper">
-            <div id="g_id_onload" data-client_id="1075901830630-jss5b3872vlu0p34t5i8j97gu3puonju.apps.googleusercontent.com" data-callback="handleCredentialResponse"></div>
-            <div class="g_id_signin" data-type="standard" data-size="large" data-width="250"></div>
-        </div>
 
-        <div id="login-loading">
-            <i class="fas fa-circle-notch fa-spin"></i> 계정 확인 중...
+    <div id="login-screen">
+        <div class="login-card">
+            <i class="fas fa-book-open" style="font-size: 3rem; color: var(--accent); margin-bottom: 20px;"></i>
+            <h2 style="margin: 0 0 10px 0; color: var(--primary);">교무 수첩</h2>
+            <p style="color: var(--text-sub); margin-bottom: 30px;">선생님을 위한 스마트한 기록 비서</p>
+            
+            <div id="g_btn_wrapper">
+                <div id="g_id_onload" data-client_id="1075901830630-jss5b3872vlu0p34t5i8j97gu3puonju.apps.googleusercontent.com" data-callback="handleCredentialResponse"></div>
+                <div class="g_id_signin" data-type="standard" data-size="large" data-width="280"></div>
+            </div>
+            <div id="login-loading" style="display:none; font-weight:bold; color:var(--text-sub);">
+                <i class="fas fa-circle-notch fa-spin"></i> 선생님 확인 중...
+            </div>
         </div>
     </div>
 
-    <div id="app-screen" class="app-container">
-        <header>
-            <h3 style="margin:0;">Class Assistant</h3>
-            <span id="user-badge" class="user-badge"></span>
-        </header>
-
-        <div class="tabs">
-            <button class="tab-btn active" onclick="goTab('search')">학생조회</button>
-            <button class="tab-btn" onclick="goTab('log')">기록</button>
-            <button class="tab-btn" onclick="goTab('ai')">AI업무</button>
-        </div>
-
-        <div id="tab-search" class="section active">
-            <div style="display:flex; gap:8px;">
-                <input type="text" id="s-input" placeholder="이름 (예: 철수)" onkeydown="if(event.key==='Enter') search()">
-                <button class="action-btn" style="width:60px; margin-top:0;" onclick="search()"><i class="fas fa-search"></i></button>
+    <div id="app-screen" class="app-layout" style="display:none;">
+        
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fas fa-book-open" style="color: var(--accent);"></i> 교무 수첩
             </div>
-            <div id="s-result"></div>
-        </div>
-
-        <div id="tab-log" class="section">
-            <input type="text" id="l-name" placeholder="학생 이름 (필수 입력)">
-            <select id="l-cate">
-                <option value="수업">수업</option>
-                <option value="생활">생활/행동</option>
-                <option value="상담">상담</option>
-                <option value="기타">기타</option>
-            </select>
-            <div class="toolbar">
-                <button class="tool-btn" id="btn-mic" onclick="toggleMic()"><i class="fas fa-microphone"></i> 음성</button>
-                <label class="tool-btn"><i class="fas fa-file-upload"></i> 파일(TXT) <input type="file" accept=".txt" style="display:none" onchange="loadFile(this)"></label>
+            <div class="sidebar-menu">
+                <button class="menu-btn active" onclick="goTab('search')"><i class="fas fa-search"></i> 학생 조회</button>
+                <button class="menu-btn" onclick="goTab('log')"><i class="fas fa-pen-fancy"></i> 기록 하기</button>
+                <button class="menu-btn" onclick="goTab('ai')"><i class="fas fa-robot"></i> AI 업무</button>
             </div>
-            <p style="font-size:0.8em; color:#666; margin:5px 0;">💡 팁: 익명화가 필요한 단어는 **별표**로 감싸주세요.</p>
-            <textarea id="l-content" placeholder="내용 입력"></textarea>
-            <button class="action-btn" onclick="saveLog()">저장하기</button>
-        </div>
-
-        <div id="tab-ai" class="section">
-            <div class="card" style="padding:15px; box-shadow:none; border:1px solid #ddd;">
-                <h4 style="margin:0 0 10px 0;"><i class="fas fa-comment"></i> 개별 상담</h4>
-                <input type="text" id="a-name" placeholder="학생 이름">
-                <textarea id="a-query" placeholder="질문 내용" style="min-height:80px;"></textarea>
-                <button class="action-btn" onclick="askAI()">질문하기</button>
-                <div id="a-result" class="result-box"></div>
+            <div class="user-profile">
+                <i class="fas fa-user-circle"></i> <span id="user-badge">선생님</span>
             </div>
+        </nav>
 
-            <div class="card" style="padding:15px; border:2px solid var(--primary); box-shadow:none;">
-                <h4 style="margin:0 0 5px 0; color:var(--primary);"><i class="fas fa-magic"></i> 생기부 일괄 생성</h4>
-                <p style="font-size:0.8em; color:#666; margin-bottom:15px;">Guidelines 시트 기반 → Drafts 시트 저장</p>
-                <div style="display:flex; gap:10px;">
-                    <button class="action-btn" style="background:#137333; margin:0;" onclick="batch('행동특성')">행특 생성</button>
-                    <button class="action-btn" style="background:#ea8600; margin:0;" onclick="batchSub()">교과 생성</button>
-                </div>
-                <div id="batch-box" style="display:none; margin-top:15px; background:#f8f9fa; padding:10px; border-radius:8px;">
-                    <div id="batch-txt" style="font-size:0.9em; font-weight:bold; margin-bottom:5px;">대기중...</div>
-                    <div style="background:#dadce0; height:8px; border-radius:4px; overflow:hidden;">
-                        <div id="batch-bar" style="width:0%; height:100%; background:var(--primary); transition:width 0.3s;"></div>
+        <main class="main-content">
+            
+            <div id="tab-search" class="section active">
+                <h2 class="page-title">학생 조회</h2>
+                <div class="split-view">
+                    <div class="input-container">
+                        <div class="card">
+                            <label style="font-weight:bold; display:block; margin-bottom:10px;">누구를 찾으시나요?</label>
+                            <div style="display:flex; gap:10px;">
+                                <input type="text" id="s-input" placeholder="이름 (예: 한지우)" onkeydown="if(event.key==='Enter') search()">
+                                <button class="btn btn-primary" style="width:60px;" onclick="search()"><i class="fas fa-search"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="result-container">
+                        <div id="s-result">
+                            <div style="text-align:center; color:var(--text-sub); padding:40px;">
+                                <i class="fas fa-id-card" style="font-size:3rem; opacity:0.3; margin-bottom:10px;"></i>
+                                <p>학생 이름을 검색하면<br>상세 정보가 여기에 표시됩니다.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+
+            <div id="tab-log" class="section" style="display:none;">
+                <h2 class="page-title">관찰 기록</h2>
+                <div class="split-view">
+                    <div class="input-container">
+                        <div class="card">
+                            <input type="text" id="l-name" placeholder="학생 이름 (필수)">
+                            <select id="l-cate">
+                                <option value="수업">수업 태도/참여</option>
+                                <option value="생활">생활/행동 특성</option>
+                                <option value="상담">상담 내용</option>
+                                <option value="기타">기타 메모</option>
+                            </select>
+                            
+                            <div class="toolbar">
+                                <div class="tool-chip" id="btn-mic" onclick="toggleMic()"><i class="fas fa-microphone"></i> 음성</div>
+                                <label class="tool-chip"><i class="fas fa-file-upload"></i> 파일(TXT) <input type="file" accept=".txt" style="display:none" onchange="loadFile(this)"></label>
+                            </div>
+                            
+                            <div style="position:relative;">
+                                <textarea id="l-content" placeholder="오늘 있었던 일을 기록하세요.&#13;&#10;**중요한 이름**은 별표로 감싸면 익명화됩니다."></textarea>
+                                <div id="log-loading" class="loading-overlay"><i class="fas fa-spinner fa-spin"></i></div>
+                            </div>
+
+                            <button class="btn btn-accent" onclick="saveLog()"><i class="fas fa-save"></i> 기록 저장</button>
+                        </div>
+                    </div>
+                    <div class="result-container">
+                        <div class="card">
+                            <h4 style="margin-top:0; color:var(--text-sub);">💡 기록 가이드</h4>
+                            <ul style="font-size:0.9rem; color:var(--text-sub); padding-left:20px; line-height:1.6;">
+                                <li>**이름** 처럼 별표로 감싸면 AI에게 비밀로 전달됩니다.</li>
+                                <li>파일을 업로드하면 자동으로 내용을 채워줍니다.</li>
+                                <li>음성 입력은 PC 크롬에서 가장 잘 작동합니다.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-ai" class="section" style="display:none;">
+                <h2 class="page-title">AI 업무 보조</h2>
+                <div class="split-view">
+                    <div class="input-container">
+                        <div class="card" style="margin-bottom:20px;">
+                            <h3 style="font-size:1.1rem; margin-top:0;"><i class="fas fa-comment-dots"></i> AI 상담</h3>
+                            <input type="text" id="a-name" placeholder="대상 학생 이름">
+                            <textarea id="a-query" placeholder="예: 이 학생의 이번 학기 행동 특성을 요약해줘." style="min-height:100px;"></textarea>
+                            <button class="btn btn-primary" onclick="askAI()"><i class="fas fa-paper-plane"></i> 질문하기</button>
+                        </div>
+
+                        <div class="card" style="border:1px dashed var(--primary);">
+                            <h3 style="font-size:1.1rem; margin-top:0;"><i class="fas fa-magic"></i> 생기부 일괄 생성</h3>
+                            <p style="font-size:0.85rem; color:var(--text-sub);">Guidelines 시트 내용을 바탕으로 초안을 만듭니다.</p>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn btn-accent" style="flex:1; background:#27AE60;" onclick="batch('행동특성')">행특 생성</button>
+                                <button class="btn btn-accent" style="flex:1; background:#F39C12;" onclick="batchSub()">교과 생성</button>
+                            </div>
+                            <div id="batch-box" style="display:none; margin-top:15px; background:#f8f9fa; padding:10px; border-radius:8px;">
+                                <div id="batch-txt" style="font-size:0.8rem; font-weight:bold; margin-bottom:5px;">준비 중...</div>
+                                <div style="background:#ddd; height:6px; border-radius:3px; overflow:hidden;">
+                                    <div id="batch-bar" style="width:0%; height:100%; background:var(--accent); transition:width 0.3s;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="result-container">
+                        <div id="a-loading" style="display:none; text-align:center; padding:50px;">
+                            <i class="fas fa-robot fa-bounce" style="font-size:2rem; color:var(--primary);"></i>
+                            <p>AI가 분석 중입니다...</p>
+                        </div>
+                        <div id="a-result-box" style="display:none;">
+                            <label style="font-weight:bold; color:var(--accent);">AI 답변:</label>
+                            <div id="a-result" class="result-paper" style="margin-top:10px;"></div>
+                        </div>
+                        <div id="a-placeholder" style="text-align:center; color:var(--text-sub); padding:40px;">
+                            <i class="fas fa-sparkles" style="font-size:3rem; opacity:0.3; margin-bottom:10px;"></i>
+                            <p>질문을 입력하면<br>여기에 답변이 표시됩니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <nav class="mobile-nav">
+            <button class="nav-item active" onclick="goTab('search')">
+                <i class="fas fa-search"></i> 조회
+            </button>
+            <button class="nav-item" onclick="goTab('log')">
+                <i class="fas fa-pen"></i> 기록
+            </button>
+            <button class="nav-item" onclick="goTab('ai')">
+                <i class="fas fa-robot"></i> AI
+            </button>
+        </nav>
     </div>
 
+    <div id="toast-container">메시지 내용</div>
+
     <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwhPeaw3O2qAPkPEfGUGEc9_Kaqz_T5xULRb3jgzmPq7BNiAtKLl8dnIpoobxHz9wwzUg/exec"; 
-    let TOKEN = "";
+        // ★ 백엔드 배포 URL (선생님의 스크립트 URL로 교체 필요)
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwhPeaw3O2qAPkPEfGUGEc9_Kaqz_T5xULRb3jgzmPq7BNiAtKLl8dnIpoobxHz9wwzUg/exec"; 
+        let TOKEN = "";
 
-    // [수정됨] 로그인 검증 로직 (location.reload() 대신 UI 토글)
-    window.handleCredentialResponse = async function(res) {
-        TOKEN = res.credential;
-        
-        // 1. UI 상태 변경 (로딩 중 표시)
-        document.getElementById("g_btn_wrapper").style.display = "none";
-        document.getElementById("login-loading").style.display = "block";
+        // --- 1. 로그인 로직 ---
+        window.handleCredentialResponse = async function(res) {
+            TOKEN = res.credential;
+            document.getElementById("g_btn_wrapper").style.display = "none";
+            document.getElementById("login-loading").style.display = "block";
 
-        try {
-            // 2. 백엔드에 'login' 액션으로 권한 확인 요청
-            const userData = await api("login", {}, true); 
-            
-            if (userData) {
-                // 3. 성공 시 화면 전환
-                document.getElementById("login-screen").style.display = "none";
-                document.getElementById("app-screen").style.display = "block";
-                document.getElementById("user-badge").innerText = userData.name + " 선생님";
-            } else {
-                throw new Error("로그인 실패");
+            try {
+                // 백엔드 검증
+                const userData = await api("login", {}, true);
+                if (userData) {
+                    document.getElementById("login-screen").style.display = "none";
+                    document.getElementById("app-screen").style.display = "flex"; // flex로 변경
+                    document.getElementById("user-badge").innerText = userData.name + " 선생님";
+                    showToast(`환영합니다, ${userData.name} 선생님!`);
+                } else {
+                    throw new Error("로그인 실패");
+                }
+            } catch (e) {
+                alert("🚫 접근 권한이 없는 계정입니다.");
+                document.getElementById("login-loading").style.display = "none";
+                document.getElementById("g_btn_wrapper").style.display = "block";
             }
-        } catch (e) {
-            // 4. 실패 시 경고 및 UI 리셋 (페이지 새로고침 제거)
-            alert("🚫 접근 권한이 없는 계정입니다.\n(등록된 이메일로 로그인해주세요)");
-            
-            // UI를 로그인 버튼 상태로 되돌립니다.
-            document.getElementById("login-loading").style.display = "none";
-            document.getElementById("g_btn_wrapper").style.display = "block";
-        }
-    };
-
-    // UI 함수
-    function goTab(id) {
-        document.querySelectorAll('.section').forEach(e => e.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(e => e.classList.remove('active'));
-        document.getElementById('tab-'+id).classList.add('active');
-        event.currentTarget.classList.add('active');
-    }
-
-    async function api(act, pl, isLogin = false) {
-        try {
-            const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ token: TOKEN, action: act, ...pl }) });
-            const json = await res.json();
-            
-            if(json.status === "error") {
-                if(isLogin) throw new Error(json.message);
-                alert("오류: " + json.message); 
-                return null;
-            }
-            return json.data;
-        } catch(e) { 
-            if(isLogin) throw e; 
-            alert("통신 오류: " + e.message); 
-            return null; 
-        }
-    }
-
-    function renderMarkdown(text) {
-        if (!text) return "";
-        return text.replace(/\*\*(.*?)\*\*/g, '<span class="mask-highlight">$1</span>');
-    }
-
-    // --- 기능 함수들 (이하 동일) ---
-    async function search() {
-        const name = document.getElementById("s-input").value.trim();
-        if(!name) return;
-        document.getElementById("s-input").blur();
-        const box = document.getElementById("s-result");
-        box.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> 조회중...</div>`;
-        
-        const d = await api("getStudentInfo", { studentName: name });
-        if(d) {
-            box.innerHTML = `
-            <div class="card">
-                <div class="card-header"><h3 class="card-name">${d.name}</h3><span class="card-sub">${d.birth}</span></div>
-                <div class="info-list">
-                    <div class="info-item"><div class="info-icon"><i class="fas fa-user-check"></i></div><div class="info-text"><span class="info-label">(주)보호자</span><span class="info-value">${d.parentMain}</span></div><a href="tel:${d.parentMain}" class="call-btn">통화</a></div>
-                    <div class="info-item"><div class="info-icon"><i class="fas fa-user-friends"></i></div><div class="info-text"><span class="info-label">(부)보호자</span><span class="info-value">${d.parentSub||"-"}</span></div></div>
-                    <div class="info-item"><div class="info-icon"><i class="fas fa-school"></i></div><div class="info-text"><span class="info-label">방과후/두레</span><span class="info-value">${d.afterSchool||"-"} | ${d.dure||"-"}</span></div></div>
-                    <div class="info-item"><div class="info-icon"><i class="fas fa-map-marker-alt"></i></div><div class="info-text"><span class="info-label">주소</span><span class="info-value" style="font-size:0.9em">${d.address}</span></div></div>
-                </div>
-                <div class="memo-box"><span class="memo-title">⚠️ 특이사항</span>${d.memo||"없음"}</div>
-            </div>`;
-        } else { box.innerHTML = `<div style="text-align:center; padding:20px; color:#888;">정보 없음</div>`; }
-    }
-
-    async function saveLog() {
-        const n = document.getElementById("l-name").value;
-        const c = document.getElementById("l-content").value;
-        if(!n || !c) return alert("입력해주세요.");
-        if(confirm("저장합니까?")) {
-            if(await api("addLog", { payload: { studentName: n, category: document.getElementById("l-cate").value, content: c } })) {
-                alert("완료"); document.getElementById("l-content").value = "";
-            }
-        }
-    }
-
-    async function askAI() {
-        const n = document.getElementById("a-name").value;
-        const q = document.getElementById("a-query").value;
-        if(!q) return alert("질문하세요.");
-        const box = document.getElementById("a-result");
-        box.style.display = "block"; 
-        box.innerText = "분석중...";
-        
-        const d = await api("askAI", { studentName: n, query: q });
-        if(d) box.innerHTML = renderMarkdown(d.answer);
-    }
-
-    function batchSub() { const s = prompt("과목명?"); if(s) batch('교과세특', s); }
-    
-    async function batch(type, sub="") {
-        if(!confirm(`전체 학생 [${type}] 생성?`)) return;
-        const box = document.getElementById("batch-box");
-        const txt = document.getElementById("batch-txt");
-        const bar = document.getElementById("batch-bar");
-        box.style.display = "block"; txt.innerText = "명단 로딩중...";
-        
-        const names = await api("getAllStudentNames", {});
-        if(!names) return;
-        
-        let cnt = 0;
-        for(let i=0; i<names.length; i++) {
-            const per = Math.round(((i+1)/names.length)*100);
-            txt.innerText = `진행중: ${names[i]} (${i+1}/${names.length})`;
-            bar.style.width = per + "%";
-            try { await api("generateDraft", { studentName: names[i], type: type, subject: sub }); cnt++; } catch(e){}
-        }
-        txt.innerText = "완료! (Drafts 시트 확인)";
-        alert(`총 ${cnt}명 생성 완료.`);
-    }
-
-    let rec = window.webkitSpeechRecognition ? new webkitSpeechRecognition() : null;
-    if(rec) { 
-        rec.lang = 'ko-KR'; 
-        rec.onstart = ()=>document.getElementById('btn-mic').classList.add('active'); 
-        rec.onend = ()=>document.getElementById('btn-mic').classList.remove('active'); 
-        rec.onresult = e => document.getElementById('l-content').value += " " + e.results[0][0].transcript; 
-    }
-    function toggleMic() { rec ? (document.getElementById('btn-mic').classList.contains('active') ? rec.stop() : rec.start()) : alert("PC 크롬 사용 권장"); }
-
-    function loadFile(input) {
-        const file = input.files[0];
-        if (!file) return;
-
-        const studentName = document.getElementById("l-name").value.trim();
-        if (!studentName) {
-            alert("먼저 [학생 이름]을 입력해주세요.\n(누가 대상 학생인지 알아야 마스킹할 수 있습니다)");
-            input.value = ""; 
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-            const rawText = e.target.result;
-            const textarea = document.getElementById("l-content");
-            
-            textarea.value = "⏳ 파일 분석 및 익명화 중...";
-            textarea.disabled = true;
-
-            const data = await api("previewMasking", { studentName: studentName, content: rawText });
-
-            if (data) {
-                textarea.value = data.maskedContent;
-                alert("익명화 완료! 내용을 확인하고 [저장]하세요.\n**별표**로 감싸진 부분은 AI에게 비밀로 전달됩니다.");
-            } else {
-                textarea.value = rawText;
-                alert("마스킹 실패 (원본 입력됨)");
-            }
-            textarea.disabled = false;
         };
-        reader.readAsText(file);
-        input.value = "";
-    }
-</script>
+
+        // --- 2. API 통신 ---
+        async function api(act, pl, isLogin = false) {
+            try {
+                const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ token: TOKEN, action: act, ...pl }) });
+                const json = await res.json();
+                if(json.status === "error") {
+                    if(isLogin) throw new Error(json.message);
+                    alert("오류: " + json.message); 
+                    return null;
+                }
+                return json.data;
+            } catch(e) { 
+                if(isLogin) throw e; 
+                alert("통신 오류: " + e.message); 
+                return null; 
+            }
+        }
+
+        // --- 3. UI 인터랙션 ---
+        function goTab(id) {
+            // 섹션 전환
+            document.querySelectorAll('.section').forEach(e => e.style.display = 'none');
+            document.getElementById('tab-'+id).style.display = 'block'; // block으로 표시
+            
+            // 버튼 활성화 (PC 사이드바 + 모바일 네비)
+            document.querySelectorAll('.menu-btn, .nav-item').forEach(e => e.classList.remove('active'));
+            
+            // 현재 탭에 맞는 버튼들 찾아서 active 추가
+            const index = ['search', 'log', 'ai'].indexOf(id);
+            document.querySelectorAll('.sidebar-menu .menu-btn')[index].classList.add('active');
+            document.querySelectorAll('.mobile-nav .nav-item')[index].classList.add('active');
+        }
+
+        function showToast(msg) {
+            const el = document.getElementById("toast-container");
+            el.innerText = msg;
+            el.classList.add("show");
+            setTimeout(() => el.classList.remove("show"), 3000);
+        }
+
+        function renderMarkdown(text) {
+            if (!text) return "";
+            // **텍스트** -> 형광펜 효과
+            return text.replace(/\*\*(.*?)\*\*/g, '<span class="mask-highlight">$1</span>');
+        }
+
+        // --- 4. 기능별 함수 ---
+
+        // [조회]
+        async function search() {
+            const name = document.getElementById("s-input").value.trim();
+            if(!name) return showToast("이름을 입력해주세요.");
+            
+            const box = document.getElementById("s-result");
+            box.innerHTML = `<div style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>생활기록부를 찾는 중...</div>`;
+            
+            const d = await api("getStudentInfo", { studentName: name });
+            if(d) {
+                box.innerHTML = `
+                <div class="card" style="border-top: 4px solid var(--accent);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h2 style="margin:0;">${d.name}</h2>
+                        <span style="background:#eee; padding:4px 8px; border-radius:4px; font-size:0.9rem;">${d.birth}</span>
+                    </div>
+                    <div style="display:grid; gap:10px;">
+                        <div><strong>📞 보호자:</strong> ${d.parentMain} <a href="tel:${d.parentMain}" style="text-decoration:none;">[전화]</a></div>
+                        <div><strong>🏚️ 주소:</strong> ${d.address}</div>
+                        <div><strong>🏫 활동:</strong> ${d.afterSchool||"-"} / ${d.dure||"-"}</div>
+                    </div>
+                    <div style="margin-top:20px; background:#FEF9E7; padding:15px; border-radius:8px;">
+                        <strong>⚠️ 특이사항</strong><br>
+                        ${d.memo||"특이사항 없음"}
+                    </div>
+                </div>`;
+            } else {
+                box.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-sub);">검색 결과가 없습니다.</div>`;
+            }
+        }
+
+        // [기록]
+        async function saveLog() {
+            const n = document.getElementById("l-name").value;
+            const c = document.getElementById("l-content").value;
+            if(!n || !c) return showToast("이름과 내용을 모두 입력해주세요.");
+            
+            if(confirm(`${n} 학생의 기록을 저장하시겠습니까?`)) {
+                if(await api("addLog", { payload: { studentName: n, category: document.getElementById("l-cate").value, content: c } })) {
+                    showToast("성공적으로 기록되었습니다! 📝");
+                    document.getElementById("l-content").value = "";
+                }
+            }
+        }
+
+        function loadFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const name = document.getElementById("l-name").value.trim();
+            if (!name) {
+                input.value = "";
+                return alert("먼저 학생 이름을 입력해주세요.");
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                document.getElementById("log-loading").style.display = "flex";
+                const data = await api("previewMasking", { studentName: name, content: e.target.result });
+                document.getElementById("log-loading").style.display = "none";
+                
+                if (data) {
+                    document.getElementById("l-content").value = data.maskedContent;
+                    showToast("파일을 불러왔습니다. 내용을 확인하세요.");
+                }
+            };
+            reader.readAsText(file);
+            input.value = "";
+        }
+
+        // [AI]
+        async function askAI() {
+            const n = document.getElementById("a-name").value;
+            const q = document.getElementById("a-query").value;
+            if(!q) return showToast("질문 내용을 입력해주세요.");
+
+            // UI 전환
+            document.getElementById("a-placeholder").style.display = "none";
+            document.getElementById("a-result-box").style.display = "none";
+            document.getElementById("a-loading").style.display = "block";
+            
+            const d = await api("askAI", { studentName: n, query: q });
+            
+            document.getElementById("a-loading").style.display = "none";
+            if(d) {
+                document.getElementById("a-result-box").style.display = "block";
+                document.getElementById("a-result").innerHTML = renderMarkdown(d.answer);
+            }
+        }
+
+        function batchSub() { const s = prompt("생성할 과목명을 입력하세요 (예: 국어)"); if(s) batch('교과세특', s); }
+        
+        async function batch(type, sub="") {
+            if(!confirm(`전체 학생의 [${type}] 초안을 생성하시겠습니까?\n(시간이 다소 소요됩니다)`)) return;
+            
+            const box = document.getElementById("batch-box");
+            const txt = document.getElementById("batch-txt");
+            const bar = document.getElementById("batch-bar");
+            box.style.display = "block";
+            
+            const names = await api("getAllStudentNames", {});
+            if(!names) return;
+            
+            let cnt = 0;
+            for(let i=0; i<names.length; i++) {
+                const per = Math.round(((i+1)/names.length)*100);
+                txt.innerText = `작성 중: ${names[i]} (${i+1}/${names.length})`;
+                bar.style.width = per + "%";
+                try { await api("generateDraft", { studentName: names[i], type: type, subject: sub }); cnt++; } catch(e){}
+            }
+            txt.innerText = "완료되었습니다! (Drafts 시트 확인)";
+            showToast(`총 ${cnt}명의 생기부 초안이 생성되었습니다.`);
+        }
+
+        // 음성 인식
+        let rec = window.webkitSpeechRecognition ? new webkitSpeechRecognition() : null;
+        if(rec) { 
+            rec.lang = 'ko-KR'; 
+            rec.onstart = ()=> document.getElementById('btn-mic').classList.add('active'); 
+            rec.onend = ()=> document.getElementById('btn-mic').classList.remove('active'); 
+            rec.onresult = e => document.getElementById('l-content').value += " " + e.results[0][0].transcript; 
+        }
+        function toggleMic() { 
+            if(!rec) return alert("이 브라우저는 음성 인식을 지원하지 않습니다. (Chrome 권장)");
+            document.getElementById('btn-mic').classList.contains('active') ? rec.stop() : rec.start(); 
+        }
+
+    </script>
 </body>
 </html>
