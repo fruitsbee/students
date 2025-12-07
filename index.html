@@ -9,7 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
-      :root {
+        :root {
             /* Warm & Professional Color Palette */
             --bg-color: #F9F9F7;
             --sidebar-bg: #2C3E50;
@@ -29,17 +29,17 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0; padding: 0;
-            height: 100vh; overflow: hidden;
+            height: 100vh; overflow: hidden; /* 전체 스크롤 방지 */
         }
 
         /* --- [레이아웃] --- */
-        .app-layout { display: flex; height: 100vh; }
+        .app-layout { display: flex; height: 100vh; width: 100vw; }
 
-        /* 사이드바 (좌측 고정) */
+        /* 사이드바 (좌측 고정 - PC용) */
         .sidebar {
             width: 240px; background: var(--sidebar-bg); color: var(--sidebar-text);
             display: flex; flex-direction: column; padding: 20px; flex-shrink: 0;
-            overflow-y: auto;
+            overflow-y: auto; z-index: 200;
         }
         .sidebar-brand { font-size: 1.2rem; font-weight: 700; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
         .sidebar-menu { display: flex; flex-direction: column; gap: 10px; }
@@ -53,44 +53,50 @@
         .menu-btn.active { background: var(--accent); color: white; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .user-profile { margin-top: auto; font-size: 0.9rem; color: #BDC3C7; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
 
-        /* 메인 컨텐츠 */
+        /* 메인 컨텐츠 영역 */
         .main-content { flex: 1; overflow-y: auto; padding: 20px; position: relative; }
         .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 20px; display: none; }
 
-        /* [핵심 변경] 반응형 레이아웃 전략 */
-        
-        /* 1. 기본 (모바일 & 태블릿 세로): 1단 구성 (위아래 배치) */
+        /* [반응형 레이아웃 전략] */
+        /* 기본: 1단 구성 */
         .split-view {
-            display: grid; 
-            grid-template-columns: 1fr; /* 한 줄로 꽉 차게 */
-            gap: 20px;
+            display: grid; grid-template-columns: 1fr; gap: 20px;
             max-width: 1200px; margin: 0 auto;
         }
         
-        /* 2. PC (가로 1200px 이상): 2단 분할 (좌우 배치) */
+        /* PC (1200px 이상): 2단 분할 */
         @media (min-width: 1201px) {
             .page-title { display: block; }
-            .split-view { 
-                grid-template-columns: 1fr 1fr; /* 좌우 1:1 비율 */
-                align-items: start; 
-            }
+            .split-view { grid-template-columns: 1fr 1fr; align-items: start; }
             .result-container { position: sticky; top: 20px; }
         }
 
-        /* 3. 태블릿/모바일 공통: 사이드바 처리 */
+        /* AI 탭 전용 그리드 레이아웃 */
+        .ai-grid-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 1201px) {
+            .ai-grid-layout {
+                grid-template-columns: 1fr 1fr;
+                grid-template-areas: "question result" "batch result";
+                align-items: start;
+            }
+            .area-question { grid-area: question; }
+            .area-batch { grid-area: batch; }
+            .area-result { grid-area: result; position: sticky; top: 20px; }
+        }
+
+        /* 모바일/태블릿 제어 */
         @media (max-width: 768px) {
-            .sidebar { display: none; } /* 폰에서는 사이드바 숨김 */
-            .mobile-nav { display: flex; } /* 폰에서는 하단바 표시 */
-            .main-content { padding-bottom: 80px; }
+            .sidebar { display: none; } /* 폰: 사이드바 숨김 */
+            .mobile-nav { display: flex !important; } /* 폰: 하단바 표시 (강제) */
+            .main-content { padding-bottom: 100px; } /* 하단바 가림 방지 여백 */
         }
         @media (min-width: 769px) {
             .page-title { display: block; }
-            /* 태블릿 이상에서는 사이드바 무조건 표시 */
-            .sidebar { display: flex; } 
-            .mobile-nav { display: none; }
+            .sidebar { display: flex; } /* 태블릿 이상: 사이드바 표시 */
+            .mobile-nav { display: none !important; } /* 태블릿 이상: 하단바 숨김 */
         }
 
-        /* UI 컴포넌트들 (기존 유지) */
+        /* UI 컴포넌트 */
         .card { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 15px; }
         input, select, textarea { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; box-sizing: border-box; background: #FAFAFA; font-family: inherit;}
         input:focus, textarea:focus, select:focus { border-color: var(--accent); outline: none; background: white; box-shadow: 0 0 0 3px rgba(211, 84, 0, 0.1); }
@@ -101,51 +107,43 @@
         .btn-accent { background: var(--accent); color: white; }
         .btn:active { transform: scale(0.98); opacity: 0.9; }
 
-        /* 툴바 & 마이크 효과 */
+        .call-btn { text-decoration: none; background: #e6f4ea; color: #137333; padding: 6px 12px; border-radius: 6px; font-size: 0.8em; font-weight: bold; }
+
+        /* 툴바 & 마이크 */
         .toolbar { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
         .tool-chip { background: white; border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; color: var(--text-sub); cursor: pointer; display: flex; align-items: center; gap: 6px; }
         .mic-active { color: #E74C3C !important; border-color: #E74C3C !important; background-color: #FDEDEC !important; animation: pulse-red 1.5s infinite; }
         @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(231, 76, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } }
         #mic-status { display: none; color: #E74C3C; font-weight: bold; font-size: 0.85rem; margin-left: auto; align-items: center; gap: 5px; }
 
-        /* 결과 박스 */
         .result-paper { background: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 4px; border-left: 4px solid var(--accent); line-height: 1.7; min-height: 100px; white-space: pre-wrap; background-image: linear-gradient(#eee .1rem, transparent .1rem); background-size: 100% 2rem; background-position: 0 1.5rem; }
         .mask-highlight { background: linear-gradient(to top, var(--highlight) 50%, transparent 50%); font-weight: bold; padding: 0 2px; }
 
-        /* 로그인 & 알림 */
+        /* 필수: 로그인 & 모바일 네비게이션 */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 320px; width: 90%; border: 1px solid var(--border); }
-        .mobile-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid var(--border); justify-content: space-around; padding: 10px 0; z-index: 100; }
-        .nav-item { background: none; border: none; color: var(--text-sub); display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; gap: 4px; }
-        .nav-item.active { color: var(--accent); }
-        .nav-item i { font-size: 1.2rem; }
+        
+        /* [중요] 모바일 하단바 스타일 */
+        .mobile-nav { 
+            display: none; /* 기본 숨김 */
+            position: fixed; bottom: 0; left: 0; width: 100%; 
+            background: white; border-top: 1px solid var(--border); 
+            justify-content: space-around; padding: 12px 0; 
+            z-index: 9999; /* 최상단 노출 */
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        .nav-item { background: none; border: none; color: var(--text-sub); display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; gap: 5px; cursor: pointer; }
+        .nav-item.active { color: var(--accent); font-weight: bold; }
+        .nav-item i { font-size: 1.4rem; }
+
         #toast-container { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 30px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 10000; }
         #toast-container.show { opacity: 1; bottom: 90px; }
         .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 10; border-radius: 12px; font-weight: bold; color: var(--primary); }
-        /* [신규] AI 탭 전용 레이아웃 (Grid Area 적용) */
-        /* 모바일/태블릿: 순서대로 배치 (질문 -> 결과 -> 일괄생성) */
-        .ai-grid-layout {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
-        
-        /* PC 화면: 2단 배치 및 위치 지정 */
-        @media (min-width: 1201px) {
-            .ai-grid-layout {
-                grid-template-columns: 1fr 1fr;
-                grid-template-areas:
-                    "question result"
-                    "batch result"; /* 왼쪽엔 질문,일괄생성 / 오른쪽엔 결과 */
-                align-items: start;
-            }
-            .area-question { grid-area: question; }
-            .area-batch { grid-area: batch; }
-            .area-result { grid-area: result; position: sticky; top: 20px; }
-        }
     </style>
 </head>
 <body>
+
+    <datalist id="student-list-data"></datalist>
 
     <div id="login-screen">
         <div class="login-card">
@@ -188,7 +186,7 @@
                         <div class="card">
                             <label style="font-weight:bold; display:block; margin-bottom:10px;">누구를 찾으시나요?</label>
                             <div style="display:flex; gap:10px;">
-                                <input type="text" id="s-input" placeholder="이름 (예: 피카츄)" onkeydown="if(event.key==='Enter') search()">
+                                <input type="text" id="s-input" placeholder="이름 (예: 한지우)" onkeydown="if(event.key==='Enter') search()" list="student-list-data">
                                 <button class="btn btn-primary" style="width:60px;" onclick="search()"><i class="fas fa-search"></i></button>
                             </div>
                         </div>
@@ -221,18 +219,12 @@
                                 <div class="tool-chip" id="btn-mic" onclick="toggleMic()">
                                     <i class="fas fa-microphone"></i> 음성
                                 </div>
-                                <label class="tool-chip">
-                                    <i class="fas fa-file-upload"></i> 파일(TXT) 
-                                    <input type="file" accept=".txt" style="display:none" onchange="loadFile(this)">
-                                </label>
-                                
-                                <div id="mic-status">
-                                    <i class="fas fa-circle fa-beat" style="font-size:0.6rem;"></i> 듣고 있어요...
-                                </div>
+                                <label class="tool-chip"><i class="fas fa-file-upload"></i> 파일(TXT) <input type="file" accept=".txt" style="display:none" onchange="loadFile(this)"></label>
+                                <div id="mic-status"><i class="fas fa-circle fa-beat" style="font-size:0.6rem;"></i> 듣고 있어요...</div>
                             </div>
                             
                             <div style="position:relative;">
-                                <textarea id="l-content" placeholder="오늘 있었던 일을 기록하세요.&#13;&#10;TXT업로드의 경**중요한 이름**은 별표로 감싸면 익명화됩니다.&#13;&#10;음성녹음과 직접 입력은 자동으로 익명화 됩니다."></textarea>
+                                <textarea id="l-content" placeholder="오늘 있었던 일을 기록하세요.&#13;&#10;**중요한 이름**은 별표로 감싸면 익명화됩니다."></textarea>
                                 <div id="log-loading" class="loading-overlay"><i class="fas fa-spinner fa-spin"></i></div>
                             </div>
 
@@ -243,8 +235,10 @@
                         <div class="card">
                             <h4 style="margin-top:0; color:var(--text-sub);">💡 기록 가이드</h4>
                             <ul style="font-size:0.9rem; color:var(--text-sub); padding-left:20px; line-height:1.6;">
-                                <li>**이름** 처럼 별표로 감싸면 AI에게 비밀로 전달됩니다.</li>
+                                <li><strong>여러 명</strong>은 쉼표(,)로 구분해서 입력하세요.<br>(예: 김철수, 이영희)</li>
+                                <li><strong>**이름**</strong> 처럼 별표로 감싸면 AI에게 비밀로 전달됩니다.</li>
                                 <li>파일을 업로드하면 자동으로 내용을 채워줍니다.</li>
+                                <li>녹음 또는 직접 입력 시 중요한 정보는 자동으로 비밀로 처리됩니다..</li>
                             </ul>
                         </div>
                     </div>
@@ -255,7 +249,6 @@
                 <h2 class="page-title">AI 업무 보조</h2>
                 
                 <div class="ai-grid-layout">
-                    
                     <div class="card area-question">
                         <h3 style="font-size:1.1rem; margin-top:0;"><i class="fas fa-comment-dots"></i> AI 어시스턴트</h3>
                         <input type="text" id="a-name" placeholder="대상 학생 이름" list="student-list-data">
@@ -296,32 +289,11 @@
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
-
-                    <div class="result-container">
-                        <div id="a-loading" style="display:none; text-align:center; padding:50px;">
-                            <i class="fas fa-robot fa-bounce" style="font-size:2rem; color:var(--primary);"></i>
-                            <p style="margin-top:20px;">AI가 분석 중입니다...</p>
-                        </div>
-                        
-                        <div id="a-result-box" style="display:none;">
-                            <label style="font-weight:bold; color:var(--accent); display:block; margin-bottom:5px;">AI 답변:</label>
-                            <div id="a-result" class="result-paper"></div>
-                        </div>
-
-                        <div id="a-placeholder" style="text-align:center; color:var(--text-sub); padding:60px 20px;">
-                            <i class="fas fa-sparkles" style="font-size:3rem; opacity:0.3; margin-bottom:15px;"></i>
-                            <p>왼쪽에서 질문을 입력하면<br>여기에 답변이 표시됩니다.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-                
 
         </main>
-
+        
         <nav class="mobile-nav">
             <button class="nav-item active" onclick="goTab('search')">
                 <i class="fas fa-search"></i> 조회
@@ -333,12 +305,13 @@
                 <i class="fas fa-robot"></i> AI
             </button>
         </nav>
+
     </div>
 
     <div id="toast-container">메시지 내용</div>
 
     <script>
-        // ★ 백엔드 배포 URL (선생님의 스크립트 URL로 교체 필요)
+        // ★ 선생님의 GAS URL로 반드시 교체하세요 ★
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwhPeaw3O2qAPkPEfGUGEc9_Kaqz_T5xULRb3jgzmPq7BNiAtKLl8dnIpoobxHz9wwzUg/exec"; 
         let TOKEN = "";
 
@@ -353,16 +326,18 @@
                 const userData = await api("login", {}, true);
                 if (userData) {
                     document.getElementById("login-screen").style.display = "none";
-                    document.getElementById("app-screen").style.display = "flex"; // flex로 변경
+                    document.getElementById("app-screen").style.display = "flex";
                     document.getElementById("user-badge").innerText = userData.name + " 선생님";
                     showToast(`환영합니다, ${userData.name} 선생님!`);
+                    
+                    // 명단 자동완성 로드
+                    loadStudentListForAutocomplete();
                 } else {
                     throw new Error("로그인 실패");
                 }
             } catch (e) {
-                alert("🚫 접근 권한이 없는 계정입니다.");
-                document.getElementById("login-loading").style.display = "none";
-                document.getElementById("g_btn_wrapper").style.display = "block";
+                alert("🚫 접근 권한이 없는 계정입니다.\n(등록된 이메일로 다시 로그인해주세요)");
+                location.reload(); // 실패 시 초기화
             }
         };
 
@@ -388,12 +363,10 @@
         function goTab(id) {
             // 섹션 전환
             document.querySelectorAll('.section').forEach(e => e.style.display = 'none');
-            document.getElementById('tab-'+id).style.display = 'block'; // block으로 표시
+            document.getElementById('tab-'+id).style.display = 'block';
             
-            // 버튼 활성화 (PC 사이드바 + 모바일 네비)
+            // 버튼 활성화
             document.querySelectorAll('.menu-btn, .nav-item').forEach(e => e.classList.remove('active'));
-            
-            // 현재 탭에 맞는 버튼들 찾아서 active 추가
             const index = ['search', 'log', 'ai'].indexOf(id);
             document.querySelectorAll('.sidebar-menu .menu-btn')[index].classList.add('active');
             document.querySelectorAll('.mobile-nav .nav-item')[index].classList.add('active');
@@ -412,126 +385,105 @@
             return text.replace(/\*\*(.*?)\*\*/g, '<span class="mask-highlight">$1</span>');
         }
 
+        // [신규] 명단 자동완성 로드
+        async function loadStudentListForAutocomplete() {
+            const names = await api("getAllStudentNames", {});
+            if (!names) return;
+            const datalist = document.getElementById("student-list-data");
+            datalist.innerHTML = names.map(n => `<option value="${n}">`).join('');
+        }
+
         // --- 4. 기능별 함수 ---
 
         // [조회]
-        // [조회] 함수 수정됨
         async function search() {
             const name = document.getElementById("s-input").value.trim();
             if(!name) return showToast("이름을 입력해주세요.");
             
             const box = document.getElementById("s-result");
-            // 로딩 화면
             box.innerHTML = `<div style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>생활기록부를 찾는 중...</div>`;
             
             const d = await api("getStudentInfo", { studentName: name });
             if(d) {
-                // (부)보호자 전화번호가 있을 때만 통화 버튼 생성
                 const subParentCallBtn = d.parentSub ? `<a href="tel:${d.parentSub}" class="call-btn" style="text-decoration:none;">통화</a>` : '';
-
                 box.innerHTML = `
                 <div class="card" style="border-top: 4px solid var(--accent);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                         <h2 style="margin:0;">${d.name}</h2>
                         <span style="background:#eee; padding:4px 8px; border-radius:4px; font-size:0.9rem;">${d.birth}</span>
                     </div>
-                    
                     <div class="info-list">
                         <div class="info-item">
                             <div class="info-icon"><i class="fas fa-user-check"></i></div>
-                            <div class="info-text">
-                                <span class="info-label">(주)보호자</span>
-                                <span class="info-value">${d.parentMain}</span>
-                            </div>
+                            <div class="info-text"><span class="info-label">(주)보호자</span><span class="info-value">${d.parentMain}</span></div>
                             <a href="tel:${d.parentMain}" class="call-btn" style="text-decoration:none;">통화</a>
                         </div>
-
                         <div class="info-item">
                             <div class="info-icon"><i class="fas fa-user-friends"></i></div>
-                            <div class="info-text">
-                                <span class="info-label">(부)보호자</span>
-                                <span class="info-value">${d.parentSub || "-"}</span>
-                            </div>
+                            <div class="info-text"><span class="info-label">(부)보호자</span><span class="info-value">${d.parentSub||"-"}</span></div>
                             ${subParentCallBtn}
-                        </div>
-
-                        <div class="info-item">
-                            <div class="info-icon"><i class="fas fa-school"></i></div>
-                            <div class="info-text">
-                                <span class="info-label">활동</span>
-                                <span class="info-value">${d.afterSchool||"-"} / ${d.dure||"-"}</span>
-                            </div>
                         </div>
                         <div class="info-item">
                             <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
-                            <div class="info-text">
-                                <span class="info-label">주소</span>
-                                <span class="info-value" style="font-size:0.9rem">${d.address}</span>
-                            </div>
+                            <div class="info-text"><span class="info-label">주소</span><span class="info-value" style="font-size:0.9rem">${d.address}</span></div>
                         </div>
                     </div>
-
                     <div style="margin-top:20px; background:#FEF9E7; padding:15px; border-radius:8px;">
-                        <strong>⚠️ 특이사항</strong><br>
-                        ${d.memo||"특이사항 없음"}
+                        <strong>⚠️ 특이사항</strong><br>${d.memo||"없음"}
                     </div>
                 </div>`;
             } else {
                 box.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-sub);">검색 결과가 없습니다.</div>`;
             }
         }
-        
+
         // [기록]
         async function saveLog() {
             const n = document.getElementById("l-name").value;
             const c = document.getElementById("l-content").value;
             if(!n || !c) return showToast("이름과 내용을 모두 입력해주세요.");
             
-            if(confirm(`${n} 학생의 기록을 저장하시겠습니까?`)) {
+            if(confirm("기록을 저장하시겠습니까?")) {
                 if(await api("addLog", { payload: { studentName: n, category: document.getElementById("l-cate").value, content: c } })) {
-                    showToast("성공적으로 기록되었습니다! 📝");
+                    showToast("저장되었습니다! 📝");
                     document.getElementById("l-content").value = "";
                 }
             }
         }
 
+        // [파일 업로드]
         function loadFile(input) {
             const file = input.files[0];
             if (!file) return;
             const name = document.getElementById("l-name").value.trim();
             if (!name) {
-                input.value = "";
-                return alert("먼저 학생 이름을 입력해주세요.");
+                input.value = ""; return alert("먼저 학생 이름을 입력해주세요.");
             }
-
             const reader = new FileReader();
             reader.onload = async function(e) {
                 document.getElementById("log-loading").style.display = "flex";
                 const data = await api("previewMasking", { studentName: name, content: e.target.result });
                 document.getElementById("log-loading").style.display = "none";
-                
                 if (data) {
                     document.getElementById("l-content").value = data.maskedContent;
-                    showToast("파일을 불러왔습니다. 내용을 확인하세요.");
+                    showToast("파일을 불러왔습니다.");
                 }
             };
             reader.readAsText(file);
             input.value = "";
         }
 
-        // [AI]
+        // [AI 질문]
         async function askAI() {
             const n = document.getElementById("a-name").value;
             const q = document.getElementById("a-query").value;
             if(!q) return showToast("질문 내용을 입력해주세요.");
 
-            // UI 전환
             document.getElementById("a-placeholder").style.display = "none";
             document.getElementById("a-result-box").style.display = "none";
             document.getElementById("a-loading").style.display = "block";
             
             const d = await api("askAI", { studentName: n, query: q });
-            
             document.getElementById("a-loading").style.display = "none";
             if(d) {
                 document.getElementById("a-result-box").style.display = "block";
@@ -539,20 +491,18 @@
             }
         }
 
-        function batchSub() { const s = prompt("생성할 과목명을 입력하세요 (예: 국어)"); if(s) batch('교과세특', s); }
+        function batchSub() { const s = prompt("과목명을 입력하세요 (예: 국어)"); if(s) batch('교과세특', s); }
         
         async function batch(type, sub="") {
-            if(!confirm(`전체 학생의 [${type}] 초안을 생성하시겠습니까?\n(시간이 다소 소요됩니다)`)) return;
-            
-            const box = document.getElementById("batch-box");
-            const txt = document.getElementById("batch-txt");
-            const bar = document.getElementById("batch-bar");
-            box.style.display = "block";
-            
+            if(!confirm(`전체 학생의 [${type}] 초안을 생성하시겠습니까?`)) return;
+            document.getElementById("batch-box").style.display = "block";
             const names = await api("getAllStudentNames", {});
             if(!names) return;
             
+            const txt = document.getElementById("batch-txt");
+            const bar = document.getElementById("batch-bar");
             let cnt = 0;
+            
             for(let i=0; i<names.length; i++) {
                 const per = Math.round(((i+1)/names.length)*100);
                 txt.innerText = `작성 중: ${names[i]} (${i+1}/${names.length})`;
@@ -560,83 +510,51 @@
                 try { await api("generateDraft", { studentName: names[i], type: type, subject: sub }); cnt++; } catch(e){}
             }
             txt.innerText = "완료되었습니다! (Drafts 시트 확인)";
-            showToast(`총 ${cnt}명의 생기부 초안이 생성되었습니다.`);
+            showToast(`총 ${cnt}명의 생기부 초안 생성 완료.`);
         }
 
-       // --- 음성 인식 기능 (토글 개선판) ---
+        // [음성 인식 (토글 개선판)]
         let rec = null;
-        let isRecording = false; // 현재 녹음 중인지 상태를 기억하는 변수
+        let isRecording = false;
 
         if (window.webkitSpeechRecognition) {
             rec = new webkitSpeechRecognition();
             rec.lang = 'ko-KR';
-            rec.continuous = true;  // 계속 듣기 모드
-            rec.interimResults = true; // 중간 결과도 표시 (실시간 타이핑 효과)
+            rec.continuous = true;
+            rec.interimResults = true;
 
-            // 1. 녹음 시작될 때 UI 변경
             rec.onstart = () => {
                 isRecording = true;
                 const btn = document.getElementById('btn-mic');
-                btn.classList.add('mic-active'); // 빨간 깜빡임 추가
-                btn.innerHTML = '<i class="fas fa-stop"></i> 중지'; // 버튼 글자 변경
-                document.getElementById('mic-status').style.display = 'flex'; // "듣고 있어요" 표시
+                btn.classList.add('mic-active');
+                btn.innerHTML = '<i class="fas fa-stop"></i> 중지';
+                document.getElementById('mic-status').style.display = 'flex';
             };
-
-            // 2. 녹음 종료될 때 UI 복구
             rec.onend = () => {
                 isRecording = false;
                 const btn = document.getElementById('btn-mic');
-                btn.classList.remove('mic-active'); // 깜빡임 제거
-                btn.innerHTML = '<i class="fas fa-microphone"></i> 음성'; // 버튼 글자 복구
-                document.getElementById('mic-status').style.display = 'none'; // "듣고 있어요" 숨김
+                btn.classList.remove('mic-active');
+                btn.innerHTML = '<i class="fas fa-microphone"></i> 음성';
+                document.getElementById('mic-status').style.display = 'none';
             };
-
-            // 3. 음성 인식 결과 처리
             rec.onresult = (e) => {
-                const transcript = Array.from(e.results)
-                    .map(result => result[0].transcript)
-                    .join('');
-                
-                // 기존 내용 뒤에 붙이기 (입력창 포커스 유지)
                 const textarea = document.getElementById('l-content');
-                
-                // 마지막 단어만 교체하는 방식으로 중복 방지 (간단한 처리)
-                // 실제로는 interimResults 때문에 텍스트가 깜빡일 수 있으나
-                // isFinal 체크하여 확정된 텍스트만 넣는게 깔끔함.
-                
                 let finalScript = "";
                 for (let i = e.resultIndex; i < e.results.length; ++i) {
                     if (e.results[i].isFinal) {
                         finalScript += e.results[i][0].transcript;
                     }
                 }
-                
                 if(finalScript) {
                     textarea.value += (textarea.value ? " " : "") + finalScript;
-                    textarea.scrollTop = textarea.scrollHeight; // 스크롤 내리기
+                    textarea.scrollTop = textarea.scrollHeight;
                 }
-            };
-
-            // 에러 처리 (권한 거부 등)
-            rec.onerror = (e) => {
-                console.error("음성 인식 에러:", e.error);
-                if(isRecording) rec.stop(); // 에러나면 멈춤 처리
             };
         }
 
-        // [토글 함수]
         function toggleMic() {
             if (!rec) return alert("이 브라우저는 음성 인식을 지원하지 않습니다. (Chrome 권장)");
-            
-            if (isRecording) {
-                // 녹음 중이면 멈춤
-                rec.stop(); 
-                // onend가 실행되면서 UI가 복구됩니다.
-            } else {
-                // 녹음 중이 아니면 시작
-                rec.start();
-                // onstart가 실행되면서 UI가 변경됩니다.
-            }
+            isRecording ? rec.stop() : rec.start();
         }
 
     </script>
